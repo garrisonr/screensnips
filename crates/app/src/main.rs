@@ -25,6 +25,16 @@ struct Session {
     doc: Document,
     rev: u64,
     rendered: Option<(u64, RgbaImage)>,
+    history: Vec<HistEntry>,
+    future: Vec<HistEntry>,
+}
+
+/// One undoable state. `source` is Some only for transitions that changed
+/// the pixels (crop) — restoring it is what makes crop undoable without
+/// keeping a full image copy per annotation.
+struct HistEntry {
+    doc: Document,
+    source: Option<RgbaImage>,
 }
 
 #[derive(Clone, Default)]
@@ -206,6 +216,47 @@ impl Session {
     fn bump(&mut self) {
         self.rev += 1;
     }
+
+    /// Record the pre-mutation state. Call BEFORE changing doc/source.
+    /// `with_source` for pixel-changing ops (crop) only.
+    fn snapshot(&mut self, with_source: bool) {
+        self.history.push(HistEntry {
+            doc: self.doc.clone(),
+            source: if with_source { Some(self.source.clone()) } else { None },
+        });
+        if self.history.len() > 50 {
+            self.history.remove(0);
+        }
+        self.future.clear();
+    }
+
+    fn undo(&mut self) -> Result<bool, String> {
+        let entry = self.history.pop().ok_or("nothing to undo")?;
+        let source_changed = entry.source.is_some();
+        self.future.push(HistEntry {
+            doc: std::mem::replace(&mut self.doc, entry.doc),
+            source: if source_changed { Some(self.source.clone()) } else { None },
+        });
+        if let Some(src) = entry.source {
+            self.source = src;
+        }
+        self.bump();
+        Ok(source_changed)
+    }
+
+    fn redo(&mut self) -> Result<bool, String> {
+        let entry = self.future.pop().ok_or("nothing to redo")?;
+        let source_changed = entry.source.is_some();
+        self.history.push(HistEntry {
+            doc: std::mem::replace(&mut self.doc, entry.doc),
+            source: if source_changed { Some(self.source.clone()) } else { None },
+        });
+        if let Some(src) = entry.source {
+            self.source = src;
+        }
+        self.bump();
+        Ok(source_changed)
+    }
 }
 
 // ---------------------------------------------------------------- helpers
@@ -384,7 +435,7 @@ async fn capture(
         });
         let (w, h) = (img.width, img.height);
         let mut guard = arc.lock().unwrap();
-        *guard = Some(Session { source: img, doc, rev: 1, rendered: None });
+        *guard = Some(Session { source: img, doc, rev: 1, rendered: None, history: Vec::new(), future: Vec::new() });
         Ok::<_, String>(serde_json::json!({
             "path": path.to_string_lossy(),
             "width": w,
@@ -424,6 +475,7 @@ fn add_primitive(
     style: Option<Style>,
 ) -> Result<serde_json::Value, String> {
     with_session(&state, |s| {
+        s.snapshot(false);
         let id = s.doc.add(kind, style.unwrap_or_default());
         s.bump();
         Ok(serde_json::json!({ "id": id, "rev": s.rev }))
@@ -438,6 +490,7 @@ fn move_primitive(
     dy: f32,
 ) -> Result<serde_json::Value, String> {
     with_session(&state, |s| {
+        s.snapshot(false);
         s.doc.translate_primitive(id, dx, dy).map_err(|e| e.to_string())?;
         s.bump();
         Ok(serde_json::json!({ "rev": s.rev }))
@@ -451,6 +504,7 @@ fn resize_primitive(
     bbox: RectN,
 ) -> Result<serde_json::Value, String> {
     with_session(&state, |s| {
+        s.snapshot(false);
         s.doc.resize_primitive(id, bbox).map_err(|e| e.to_string())?;
         s.bump();
         Ok(serde_json::json!({ "rev": s.rev }))
@@ -460,6 +514,7 @@ fn resize_primitive(
 #[tauri::command]
 fn commit_crop(state: State<'_, AppState>, rect: RectN) -> Result<serde_json::Value, String> {
     with_session(&state, |s| {
+        s.snapshot(true);
         let (old_w, old_h) = (s.doc.image.width, s.doc.image.height);
         let (applied, dropped) = s.doc.commit_crop(rect);
         let x = (applied.x * old_w as f32).round() as u32;
@@ -486,6 +541,7 @@ fn commit_crop(state: State<'_, AppState>, rect: RectN) -> Result<serde_json::Va
 #[tauri::command]
 fn remove_primitive(state: State<'_, AppState>, id: u64) -> Result<serde_json::Value, String> {
     with_session(&state, |s| {
+        s.snapshot(false);
         s.doc.remove(id).map_err(|e| e.to_string())?;
         s.bump();
         Ok(serde_json::json!({ "rev": s.rev }))
@@ -495,10 +551,52 @@ fn remove_primitive(state: State<'_, AppState>, id: u64) -> Result<serde_json::V
 #[tauri::command]
 fn set_beautify(state: State<'_, AppState>, beautify: Beautify) -> Result<serde_json::Value, String> {
     with_session(&state, |s| {
+        s.snapshot(false);
         s.doc.beautify = beautify;
         s.bump();
         Ok(serde_json::json!({ "rev": s.rev }))
     })
+}
+
+#[tauri::command]
+fn undo(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    with_session(&state, |s| {
+        let source_changed = s.undo()?;
+        Ok(serde_json::json!({
+            "rev": s.rev,
+            "source_changed": source_changed,
+            "width": s.doc.image.width,
+            "height": s.doc.image.height,
+            "can_undo": !s.history.is_empty(),
+            "can_redo": !s.future.is_empty(),
+        }))
+    })
+}
+
+#[tauri::command]
+fn redo(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    with_session(&state, |s| {
+        let source_changed = s.redo()?;
+        Ok(serde_json::json!({
+            "rev": s.rev,
+            "source_changed": source_changed,
+            "width": s.doc.image.width,
+            "height": s.doc.image.height,
+            "can_undo": !s.history.is_empty(),
+            "can_redo": !s.future.is_empty(),
+        }))
+    })
+}
+
+#[tauri::command]
+fn history_state(state: State<'_, AppState>) -> serde_json::Value {
+    match state.0.lock().unwrap().as_ref() {
+        Some(s) => serde_json::json!({
+            "can_undo": !s.history.is_empty(),
+            "can_redo": !s.future.is_empty(),
+        }),
+        None => serde_json::json!({ "can_undo": false, "can_redo": false }),
+    }
 }
 
 fn library_dir() -> Result<std::path::PathBuf, String> {
@@ -600,7 +698,7 @@ fn library_open(
     };
     let (w, h) = (img.width, img.height);
     let mut guard = state.0.lock().unwrap();
-    *guard = Some(Session { source: img, doc, rev: 1, rendered: None });
+    *guard = Some(Session { source: img, doc, rev: 1, rendered: None, history: Vec::new(), future: Vec::new() });
     Ok(serde_json::json!({ "width": w, "height": h, "rev": 1, "editable": editable }))
 }
 
@@ -1140,6 +1238,9 @@ fn main() {
             resize_primitive,
             commit_crop,
             remove_primitive,
+            undo,
+            redo,
+            history_state,
             library_list,
             library_open,
             set_beautify,

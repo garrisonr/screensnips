@@ -49,3 +49,32 @@ note; code + its own assert + shot-model padding semantics agree on 896x546.)
   A fable-files release build IS running (cargo build --release -p fable-files
   --features custom-protocol -j 1; rustc on fable_files_lib). Per one-heavy-thing
   rule: STEP 1 copy proceeds (light I/O), STEP 2 build waits for idle.
+
+---
+
+## MVP completion build — 2026-10-14 (late)
+
+Shipped on top of the state above (library rail + trio + crop already in):
+
+- shot-model: + Spotlight, + Callout {at, tail, text}, + Beautify.aspect
+  (sidecar format stays v1). shot-render: system-font text via ab_glyph
+  (bitmap fallback kept), procedural stamps (check/cross/star/warning/
+  arrow_up; unknown ids still report unrendered), spotlight, callout,
+  aspect canvas growth. Sandbox tests: model 10, render 11, capture 3,
+  library 1 — all green.
+- App: Copy (wl-copy/xclip + pkexec auto-install), export PNG/JPG/WebP
+  1x/2x, presets (Bondi/Newspaper/Grizzette seeds), forced-backend
+  setting, delay + hide-before-instant, --capture/--delay CLI,
+  diagnostics panel, Report a Bug / Request a Feature, quickbar,
+  first-run banner, in-family icon (icon/screensnips.svg).
+- G9 release build: attempt 1, zero code fixes, 23m49s (-j 1, opt-level
+  2). Binary 17,267,272 B, MD5 4166be6487b96ac38532fc2c717f9246.
+  SELFTEST_OK canvas=896x546 png_bytes=420788 unrendered=0 library=ok.
+- wl-copy mechanism verified in richard's session: wl-paste lists
+  image/png and returns the exact 70 test bytes after the client exits.
+- Installed: ~/Applications/screensnips (MD5 == built), hicolor icons
+  16..512, ~/.local/share/applications/screensnips.desktop with
+  picker/full actions. GUI smoke: PID stable, empty log; left running
+  for Dickles' dogfood. Disk after: 4.2G free (build tree grew; watch).
+- Click-path gates (portal pick, copy -> close -> paste, screenshot QA)
+  are Dickles' dogfood tests — headless seat cannot execute them.

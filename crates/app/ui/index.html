@@ -11,7 +11,7 @@
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:system-ui,"Inter",sans-serif;background:#14181f;color:var(--ink)}
-  header{display:flex;align-items:center;gap:.75rem;padding:.6rem 1rem;background:var(--rail);border-bottom:1px solid var(--border)}
+  header{display:flex;flex-wrap:wrap;align-items:center;gap:.75rem;row-gap:.45rem;padding:.6rem 1rem;background:var(--rail);border-bottom:1px solid var(--border)}
   header h1{font-size:1.05rem;margin:0;letter-spacing:-.02em}
   .badge{font-size:.72rem;color:var(--muted);border:1px solid var(--border);padding:.15rem .5rem;border-radius:999px}
   button{background:#232b3a;color:var(--ink);border:1px solid var(--border);border-radius:999px;height:2rem;padding:0 .9rem;cursor:pointer}
@@ -38,6 +38,13 @@
   label{display:block;font-size:.8rem;color:var(--muted);margin:.5rem 0 .2rem}
   input[type=range]{width:100%}
   select{width:100%;height:2rem;border-radius:9px;background:#232b3a;color:var(--ink);border:1px solid var(--border);padding:0 .5rem}
+  .dropdown{position:relative}
+  .dropdown-btn{width:100%;text-align:left;border-radius:9px;display:flex;justify-content:space-between;align-items:center}
+  .dropdown-menu{position:absolute;left:0;right:0;top:calc(100% + 4px);background:#1e2635;border:1px solid var(--border);border-radius:12px;padding:.3rem;z-index:60;box-shadow:0 14px 34px rgba(0,0,0,.55)}
+  .dropdown-menu button{display:block;width:100%;text-align:left;border:none;background:transparent;border-radius:8px;height:2.05rem;padding:0 .6rem;color:var(--ink);font-size:.85rem}
+  .dropdown-menu button:hover{background:rgba(111,211,255,.16)}
+  .dropdown-menu button.active{color:var(--accent);font-weight:600}
+  .dropdown-menu button.active::before{content:"✓ "}
   #preview{width:100%;border:1px solid var(--border);border-radius:12px;background:#0d0f13}
   #status{font-size:.8rem;color:var(--muted);padding:.3rem 0}
   .privacy{font-size:.75rem;color:var(--muted);border:1px dashed var(--border);border-radius:12px;padding:.5rem .6rem}
@@ -59,10 +66,41 @@
   .row > *{flex:1}
   .row > button{flex:0 0 auto}
   select.inline{width:auto;height:2rem}
-  @media (max-width:1000px){
-    main{grid-template-columns:1fr;height:auto}
-    nav#library{order:3;border-right:none;border-top:1px solid var(--border)}
-    aside{border-left:none;border-top:1px solid var(--border)}
+  /* ---- multi-format law: one codebase, phone/tablet/desktop/TV ---- */
+  /* TV & large desktop: distance viewing — scale the whole rem system up */
+  @media (min-width:1800px){
+    html{font-size:20px}
+    main{grid-template-columns:300px 1fr 400px}
+  }
+  /* Tablet: stage + tools side by side, library becomes a filmstrip below */
+  @media (max-width:1024px){
+    main{grid-template-columns:1fr 300px;grid-template-rows:minmax(0,1fr) auto}
+    nav#library{grid-column:1 / -1;order:3;border-right:none;border-top:1px solid var(--border);max-height:220px}
+    nav#library #libList{display:flex;gap:.55rem;overflow-x:auto;padding-bottom:.3rem}
+    nav#library .lib-entry{flex:0 0 180px;margin-bottom:0}
+    aside{grid-row:1}
+    #stage{grid-row:1}
+  }
+  /* Phone: one column — canvas first, tools under it, library last; the
+     page scrolls as one document, nothing is crushed into unusability */
+  @media (max-width:640px){
+    main{grid-template-columns:1fr;grid-template-rows:none;height:auto}
+    #stage{order:1;overflow:visible}
+    aside{order:2;border-left:none;border-top:1px solid var(--border)}
+    nav#library{order:3;max-height:none}
+    nav#library #libList{display:block;overflow:visible}
+    nav#library .lib-entry{margin-bottom:.55rem}
+    header h1{font-size:.95rem}
+    .badge{display:none}
+    header button{padding:0 .6rem}
+    #delaySel{max-width:7.5rem}
+  }
+  /* Coarse pointers (touch, TV remotes with air-mouse): 44px+ targets */
+  @media (pointer:coarse){
+    button{height:2.75rem}
+    .swatch{width:2.5rem;height:2.5rem}
+    .dropdown-menu button{height:2.75rem}
+    nav#library h2 button{height:2rem}
   }
   @media (prefers-reduced-motion: reduce){
     *{transition:none !important;animation:none !important;scroll-behavior:auto !important}
@@ -123,6 +161,8 @@
       <button data-tool="select">Select / Move</button>
       <button data-tool="crop">✂ Crop</button>
       <button id="btnDelete">Delete selected</button>
+      <button id="btnUndo" disabled>↩ Undo</button>
+      <button id="btnRedo" disabled>↪ Redo</button>
     </div>
     <div class="stampbar" id="stamps" title="Stamps — Snagit's clip art, drawn fresh every time">
       <button data-stamp="check" title="Check">✓</button>
@@ -158,13 +198,16 @@
     <input type="range" id="rad" min="0" max="0.05" step="0.002" value="0.012">
     <label><input type="checkbox" id="shadow" checked> Drop shadow</label>
     <label>Background</label>
-    <select id="bg">
-      <option value="indigo">Brand indigo</option>
-      <option value="dark">Near black</option>
-      <option value="light">Paper</option>
-      <option value="sunset">Sunset gradient</option>
-      <option value="blurred">Blurred screenshot</option>
-    </select>
+    <div class="dropdown" id="bgDropdown">
+      <button type="button" id="bgButton" class="dropdown-btn"><span id="bgLabel">Brand indigo</span><span>▾</span></button>
+      <div class="dropdown-menu" id="bgMenu" hidden>
+        <button type="button" data-bg="indigo" class="active">Brand indigo</button>
+        <button type="button" data-bg="dark">Near black</button>
+        <button type="button" data-bg="light">Paper</button>
+        <button type="button" data-bg="sunset">Sunset gradient</button>
+        <button type="button" data-bg="blurred">Blurred screenshot</button>
+      </div>
+    </div>
     <label>Canvas shape (grows the canvas — never crops your shot)</label>
     <select id="aspect">
       <option value="">Auto — fit the shot</option>
@@ -235,6 +278,14 @@ let imgW = 0, imgH = 0, pendingCrop = null;
 let curColor = { r:255, g:59, b:48, a:255 };
 let curStamp = 'check';
 let customBg = null;
+let bgKey = 'indigo';
+const BG_LABELS = { indigo:'Brand indigo', dark:'Near black', light:'Paper', sunset:'Sunset gradient', blurred:'Blurred screenshot' };
+function syncBgUi(activeKey){
+  document.getElementById('bgLabel').textContent =
+    activeKey ? BG_LABELS[activeKey] : 'Custom background';
+  document.querySelectorAll('#bgMenu button[data-bg]').forEach(x =>
+    x.classList.toggle('active', x.dataset.bg === activeKey));
+}
 let shadowCfg = { blur:0.03, offset_y:0.012, opacity:0.35 };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 function strokeStyle(extra){ return Object.assign({ stroke: curColor, stroke_width: 0.004, fill: null, font_size: null }, extra || {}); }
@@ -371,10 +422,15 @@ function drawOverlay(temp){
       octx.strokeStyle = '#fff'; octx.setLineDash([4,4]); octx.strokeRect(X(k.rect.x),Y(k.rect.y),k.rect.w*imgW,k.rect.h*imgH); octx.setLineDash([]);
     } else if(k.type==='step_badge'){
       stepN++;
-      const r = Math.max(13, imgW*0.02);
+      const r = Math.max(15, imgW*0.02);
       octx.beginPath(); octx.arc(X(k.at.x),Y(k.at.y),r,0,Math.PI*2); octx.fill();
-      octx.fillStyle = '#fff'; octx.font = `bold ${r*1.05}px system-ui`;
+      octx.font = `bold ${r*1.05}px system-ui`;
       octx.textAlign='center'; octx.textBaseline='middle';
+      // dark outline first so the numeral reads on ANY background
+      octx.lineWidth = Math.max(2, r*0.16);
+      octx.strokeStyle = 'rgba(0,0,0,0.6)';
+      octx.strokeText(String(stepN), X(k.at.x), Y(k.at.y)+1);
+      octx.fillStyle = '#fff';
       octx.fillText(String(stepN), X(k.at.x), Y(k.at.y)+1);
     } else if(k.type==='text'){
       octx.fillStyle = css(st.stroke);
@@ -470,10 +526,11 @@ function hitHandle(p){
   const b = primBBox(prim);
   const r = overlay.getBoundingClientRect();
   const pts = handlePoints(b);
+  const tol = window.matchMedia('(pointer: coarse)').matches ? 24 : 14;
   for(let i=0;i<8;i++){
     // compare in display space: normalized coords scaled by canvas display size
     const dx = (p.x - pts[i][0]) * r.width, dy = (p.y - pts[i][1]) * r.height;
-    if(Math.abs(dx) <= 14 && Math.abs(dy) <= 14) return i;
+    if(Math.abs(dx) <= tol && Math.abs(dy) <= tol) return i;
   }
   return -1;
 }
@@ -502,7 +559,9 @@ overlay.addEventListener('pointerdown', ev => {
     selectedId = null; drawOverlay(); return;
   }
   if(tool === 'step'){
-    addPrim({ type:'step_badge', at:p });
+    const n = doc.primitives.filter(q => q.kind.type === 'step_badge').length + 1;
+    addPrim({ type:'step_badge', at:p }).then(() =>
+      setStatus(`Step ${n} placed — the next one is ${n + 1}.`));
     return;
   }
   if(tool === 'text'){
@@ -520,7 +579,35 @@ overlay.addEventListener('pointerdown', ev => {
   }
   drag = { mode:'create', start:p, cur:p };
 });
+function drawStepGhost(p){
+  // live preview of the badge you are ABOUT to place, number included,
+  // slightly larger than life so it can actually be read mid-aim
+  const n = doc.primitives.filter(q => q.kind.type === 'step_badge').length + 1;
+  const r = Math.max(15, imgW*0.02) * 1.25;
+  const x = p.x*imgW, y = p.y*imgH;
+  octx.save();
+  octx.globalAlpha = 0.9;
+  octx.beginPath(); octx.arc(x, y, r, 0, Math.PI*2);
+  octx.fillStyle = 'rgb(255,59,48)'; octx.fill();
+  octx.globalAlpha = 1;
+  octx.lineWidth = 2; octx.strokeStyle = '#fff'; octx.stroke();
+  octx.font = `bold ${r*1.05}px system-ui`;
+  octx.textAlign = 'center'; octx.textBaseline = 'middle';
+  octx.lineWidth = Math.max(2, r*0.16);
+  octx.strokeStyle = 'rgba(0,0,0,0.6)';
+  octx.strokeText(String(n), x, y + 1);
+  octx.fillStyle = '#fff';
+  octx.fillText(String(n), x, y + 1);
+  octx.restore();
+}
+
 overlay.addEventListener('pointermove', ev => {
+  if(!drag && tool === 'step' && doc){
+    const p = normPos(ev);
+    drawOverlay();
+    drawStepGhost(p);
+    return;
+  }
   if(!drag) return;
   const p = normPos(ev);
   if(drag.mode === 'resize'){
@@ -556,12 +643,38 @@ overlay.addEventListener('pointermove', ev => {
   if(drag.mode === 'create'){
     drag.cur = p;
     const x = Math.min(drag.start.x,p.x), y = Math.min(drag.start.y,p.y);
-    drawOverlay({ x, y, w: Math.abs(p.x-drag.start.x), h: Math.abs(p.y-drag.start.y) });
+    const w = Math.abs(p.x-drag.start.x), h = Math.abs(p.y-drag.start.y);
+    if(tool === 'ellipse'){
+      // preview the ELLIPSE, not its bounding box (Dickles, 2026-10-14)
+      drawOverlay();
+      octx.save();
+      octx.strokeStyle = '#fff'; octx.lineWidth = 1.5; octx.setLineDash([5,4]);
+      octx.beginPath();
+      octx.ellipse((x+w/2)*imgW, (y+h/2)*imgH, w*imgW/2, h*imgH/2, 0, 0, Math.PI*2);
+      octx.stroke();
+      octx.setLineDash([]);
+      octx.fillStyle = '#fff'; octx.font = '13px system-ui';
+      octx.fillText(`${Math.round(w*imgW)} × ${Math.round(h*imgH)}`, x*imgW+4, y*imgH-6);
+      octx.restore();
+    } else if(tool === 'arrow' || tool === 'line'){
+      drawOverlay();
+      octx.save();
+      octx.strokeStyle = '#fff'; octx.lineWidth = 1.5; octx.setLineDash([5,4]);
+      octx.beginPath();
+      octx.moveTo(drag.start.x*imgW, drag.start.y*imgH);
+      octx.lineTo(p.x*imgW, p.y*imgH);
+      octx.stroke();
+      octx.setLineDash([]);
+      octx.restore();
+    } else {
+      drawOverlay({ x, y, w, h });
+    }
   } else if(drag.mode === 'move'){
     drag.moved = true;
     drag.delta = { x: p.x - drag.start.x, y: p.y - drag.start.y };
   }
 });
+overlay.addEventListener('pointerleave', () => { if(!drag) drawOverlay(); });
 overlay.addEventListener('pointerup', async ev => {
   if(!drag) return;
   const p = normPos(ev);
@@ -622,7 +735,54 @@ async function refresh(){
   doc = await invoke('get_doc');
   drawOverlay();
   await drawPreview();
+  await syncUndoButtons();
 }
+
+async function syncUndoButtons(){
+  try{
+    const h = await invoke('history_state');
+    document.getElementById('btnUndo').disabled = !h.can_undo;
+    document.getElementById('btnRedo').disabled = !h.can_redo;
+  }catch(e){ /* no session yet */ }
+}
+
+async function doUndo(){
+  try{
+    const res = await invoke('undo');
+    selectedId = null;
+    if(res.source_changed){
+      imgW = res.width; imgH = res.height;
+      doc = await invoke('get_doc');
+      await drawEditor();
+      await drawPreview();
+    } else {
+      await refresh();
+    }
+    document.getElementById('btnUndo').disabled = !res.can_undo;
+    document.getElementById('btnRedo').disabled = !res.can_redo;
+    setStatus('Undone.');
+  }catch(e){ setStatus('Nothing to undo.'); }
+}
+
+async function doRedo(){
+  try{
+    const res = await invoke('redo');
+    selectedId = null;
+    if(res.source_changed){
+      imgW = res.width; imgH = res.height;
+      doc = await invoke('get_doc');
+      await drawEditor();
+      await drawPreview();
+    } else {
+      await refresh();
+    }
+    document.getElementById('btnUndo').disabled = !res.can_undo;
+    document.getElementById('btnRedo').disabled = !res.can_redo;
+    setStatus('Redone.');
+  }catch(e){ setStatus('Nothing to redo.'); }
+}
+document.getElementById('btnUndo').addEventListener('click', doUndo);
+document.getElementById('btnRedo').addEventListener('click', doRedo);
 
 document.getElementById('tools').addEventListener('click', ev => {
   const b = ev.target.closest('button[data-tool]');
@@ -680,6 +840,17 @@ document.addEventListener('keydown', async ev => {
     await refresh();
     return;
   }
+  const mod = ev.ctrlKey || ev.metaKey;
+  if(mod && !ev.shiftKey && (ev.key === 'z' || ev.key === 'Z')){
+    ev.preventDefault();
+    await doUndo();
+    return;
+  }
+  if(mod && (ev.key === 'y' || (ev.shiftKey && (ev.key === 'z' || ev.key === 'Z')))){
+    ev.preventDefault();
+    await doRedo();
+    return;
+  }
   if(selectedId != null && ev.key.startsWith('Arrow') && imgW){
     ev.preventDefault();
     const step = ev.shiftKey ? 10 : 1;
@@ -713,7 +884,7 @@ function readBeautify(){
     : { linked:false, top:parseFloat($('padTop').value), right:parseFloat($('padRight').value), bottom:parseFloat($('padBottom').value), left:parseFloat($('padLeft').value) };
   const asp = $('aspect').value;
   return {
-    background: customBg ?? BGS[$('bg').value],
+    background: customBg ?? BGS[bgKey],
     padding,
     corner_radius: parseFloat($('rad').value),
     shadow: { enabled: $('shadow').checked, blur: shadowCfg.blur, offset_y: shadowCfg.offset_y, opacity: shadowCfg.opacity },
@@ -744,7 +915,8 @@ function applyBeautify(b){
     if(bg.type === 'gradient' && eq(bg.from, b.background.from) && eq(bg.to, b.background.to)) matched = name;
     if(bg.type === 'blurred_screenshot') matched = name;
   }
-  if(matched) $('bg').value = matched; else customBg = b.background;
+  if(matched){ bgKey = matched; syncBgUi(matched); }
+  else { customBg = b.background; syncBgUi(null); }
   const p = b.padding;
   $('padLink').checked = !!p.linked;
   $('pad').value = p.top;
@@ -758,7 +930,27 @@ function applyBeautify(b){
 }
 for(const id of ['pad','padTop','padRight','padBottom','padLeft','padLink','rad','shadow','aspect'])
   $(id).addEventListener('input', pushBeautify);
-$('bg').addEventListener('input', () => { customBg = null; pushBeautify(); });
+const bgMenuEl = document.getElementById('bgMenu');
+// A desktop app is not a web page: kill the browser's Back/Forward/Reload
+// context menu app-wide. (Right-click earns an app menu later; silence
+// beats nonsense now.)
+document.addEventListener('contextmenu', ev => ev.preventDefault());
+document.getElementById('bgButton').addEventListener('click', ev => {
+  ev.stopPropagation();
+  bgMenuEl.hidden = !bgMenuEl.hidden;
+});
+document.addEventListener('click', ev => {
+  if(!document.getElementById('bgDropdown').contains(ev.target)) bgMenuEl.hidden = true;
+});
+bgMenuEl.addEventListener('click', async ev => {
+  const b = ev.target.closest('button[data-bg]');
+  if(!b) return;
+  bgKey = b.dataset.bg;
+  customBg = null;
+  syncBgUi(bgKey);
+  bgMenuEl.hidden = true;
+  await pushBeautify();
+});
 
 let presetsCache = [];
 function fillPresets(sel){
