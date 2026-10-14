@@ -1,0 +1,10 @@
+[package]
+name = "shot-model"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Screensnips document model: non-destructive vector annotations + beautify settings over a captured image, all geometry in normalized [0,1] space, serialized as a versioned TOML sidecar. No rendering, no I/O policy — pure data + rules."
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"

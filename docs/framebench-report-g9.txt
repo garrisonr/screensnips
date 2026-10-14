@@ -1,0 +1,30 @@
+SCREENSNIPS — STEP 0 FRAME BENCH (Rust side)
+threads available: 4
+(WebKit/canvas presentation leg is measured by the Tauri harness, not here.)
+
+== 2560x1080 (G9 ultrawide, actual) ==
+  frame copy:            0.95 ms  (11.69 GB/s)
+  thumbnail 512w 1T:    10.19 ms
+  thumbnail 512w 4T:     3.59 ms  (2.8x)
+  box blur r16 full:   190.78 ms
+  blur via 1/8 scale:   13.26 ms  (14.4x faster)
+  beautify composite:  283.88 ms  (4 fps equiv)
+  stream 256K chunks:   22.07 ms  (0.50 GB/s)
+
+== 3840x2160 (4K) ==
+  frame copy:            3.27 ms  (10.15 GB/s)
+  thumbnail 512w 1T:    24.12 ms
+  thumbnail 512w 4T:    10.03 ms  (2.4x)
+  box blur r16 full:   897.18 ms
+  blur via 1/8 scale:   40.91 ms  (21.9x faster)
+  beautify composite: 1353.68 ms  (1 fps equiv)
+  stream 256K chunks:   66.58 ms  (0.50 GB/s)
+
+== 5120x2880 (5K) ==
+  frame copy:            5.73 ms  (10.29 GB/s)
+  thumbnail 512w 1T:    40.94 ms
+  thumbnail 512w 4T:    20.66 ms  (2.0x)
+  box blur r16 full:  3093.75 ms
+  blur via 1/8 scale:   96.55 ms  (32.0x faster)
+  beautify composite: 2655.85 ms  (0 fps equiv)
+  stream 256K chunks:  124.33 ms  (0.47 GB/s)

@@ -1,0 +1,17 @@
+[package]
+name = "tauri-framebench"
+version = "0.1.0"
+edition = "2021"
+description = "Screensnips Step 0 gate: measures delivering full-res RGBA frames from Rust into a Tauri/WebKit canvas via a custom protocol vs the forbidden path (base64 over IPC invoke). Standalone crate — intentionally NOT a workspace member so it never weighs down the main build."
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[profile.release]
+opt-level = 2

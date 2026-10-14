@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Screensnips — Frame Pipeline Bench</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 2rem; background: #1c1c1e; color: #f2f2f7; }
+  pre { background: #2c2c2e; padding: 1rem; border-radius: 8px; white-space: pre-wrap; }
+  canvas { max-width: 480px; border: 1px solid #48484a; display: block; margin-top: 1rem; }
+</style>
+</head>
+<body>
+<h1>Frame pipeline bench</h1>
+<p>Protocol streaming vs base64-over-IPC, at real screenshot sizes. Leave this window alone until it says DONE.</p>
+<pre id="log">starting…</pre>
+<canvas id="cv" width="2560" height="1080"></canvas>
+<script>
+const SIZES = [[2560,1080],[3840,2160],[5120,2880]];
+const REPS = 5;
+const logEl = document.getElementById('log');
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const invoke = window.__TAURI__?.core?.invoke;
+const protoBase = navigator.userAgent.includes('Windows') ? 'http://frame.localhost' : 'frame://localhost';
+const lines = [];
+function log(s) {
+  lines.push(s); logEl.textContent = lines.join('\n');
+  if (invoke) invoke('bench_log', { line: s }).catch(() => {});
+}
+// Last-resort error channel: ping the error through the frame protocol,
+// whose handler logs every request to the app's stderr.
+function pingError(msg) {
+  try { new Image().src = `${protoBase}/ERROR_${encodeURIComponent(String(msg).slice(0, 120))}`; } catch (e) {}
+}
+window.addEventListener('error', e => { log('WINDOW ERROR: ' + e.message); pingError(e.message); });
+window.addEventListener('unhandledrejection', e => { log('UNHANDLED REJECTION: ' + e.reason); pingError(e.reason); });
+function median(a) { const s = [...a].sort((x,y)=>x-y); return s[Math.floor(s.length/2)]; }
+
+function b64ToBytes(b64) {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+async function present(buf, w, h) {
+  cv.width = w; cv.height = h;
+  const img = new ImageData(new Uint8ClampedArray(buf.buffer, buf.byteOffset, w*h*4), w, h);
+  ctx.putImageData(img, 0, 0);
+  // force a paint + 1px readback so we time presentation, not just queueing;
+  // the timeout guards against WebKit throttling rAF for a non-key window,
+  // which otherwise hangs the bench forever
+  await Promise.race([
+    new Promise(r => requestAnimationFrame(() => { ctx.getImageData(0,0,1,1); r(); })),
+    new Promise(r => setTimeout(r, 1500))
+  ]);
+}
+
+async function benchProtocol(w, h) {
+  const fetchMs = [], totalMs = [];
+  for (let i = 0; i < REPS; i++) {
+    const t0 = performance.now();
+    const res = await fetch(`${protoBase}/${w}x${h}`);
+    const buf = new Uint8Array(await res.arrayBuffer());
+    const t1 = performance.now();
+    await present(buf, w, h);
+    const t2 = performance.now();
+    fetchMs.push(t1 - t0); totalMs.push(t2 - t0);
+  }
+  return { fetch: median(fetchMs), total: median(totalMs) };
+}
+
+async function benchIpc(w, h) {
+  const ipcMs = [], totalMs = [];
+  for (let i = 0; i < REPS; i++) {
+    const t0 = performance.now();
+    const b64 = await invoke('get_frame_base64', { size: `${w}x${h}` });
+    const t1 = performance.now();
+    const buf = b64ToBytes(b64);
+    await present(buf, w, h);
+    const t2 = performance.now();
+    ipcMs.push(t1 - t0); totalMs.push(t2 - t0);
+  }
+  return { ipc: median(ipcMs), total: median(totalMs) };
+}
+
+(async () => {
+  try {
+    if (!invoke) throw new Error('window.__TAURI__.core.invoke unavailable');
+    log('bench start; tauri globals ok');
+    const results = { ua: navigator.userAgent, sizes: {} };
+    for (const [w, h] of SIZES) {
+      log(`--- ${w}x${h} ---`);
+      const p = await benchProtocol(w, h);
+      log(`protocol: fetch ${p.fetch.toFixed(1)} ms, fetch+present ${p.total.toFixed(1)} ms`);
+      const q = await benchIpc(w, h);
+      log(`ipc+b64:  invoke ${q.ipc.toFixed(1)} ms, invoke+present ${q.total.toFixed(1)} ms`);
+      results.sizes[`${w}x${h}`] = { protocol: p, ipc_base64: q };
+    }
+    await invoke('save_results', { json: JSON.stringify(results, null, 2) });
+    log('DONE — results saved.');
+  } catch (err) {
+    log('BENCH FAILED: ' + err);
+    pingError(err);
+  }
+})();
+</script>
+</body>
+</html>

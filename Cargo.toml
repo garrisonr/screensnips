@@ -1,0 +1,11 @@
+[workspace]
+resolver = "2"
+members = ["crates/probe", "crates/framebench", "crates/shot-model", "crates/shot-render", "crates/shot-capture", "crates/shot-library"]
+
+[workspace.package]
+edition = "2021"
+license = "MIT"
+version = "0.1.0"
+
+[profile.release]
+opt-level = 2

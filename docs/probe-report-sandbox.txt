@@ -1,0 +1,48 @@
+SCREENSNIPS — STEP 0 CAPABILITY PROBE
+=====================================
+Session type:      (unset)
+Desktop:           (unset)
+Wayland display:   absent
+X11 display:       absent
+wlroots signals:   Hyprland=false Sway=false
+
+PORTAL
+  portal binary:        no
+  backend definitions:  no
+  Screenshot interface: no
+  ScreenCast interface: no
+  GlobalShortcuts:      no
+  Clipboard interface:  no
+
+WAYLAND PROTOCOLS (via wayland-info, if available)
+  (could not query — no WAYLAND_DISPLAY or no wayland-info/weston-info)
+  ext-image-copy-capture: no
+  wlr-screencopy:         no
+  wlr-layer-shell:        no
+
+HELPER TOOLS ON PATH
+  grim         no
+  slurp        no
+  wf-recorder  no
+  spectacle    no
+  flameshot    no
+  tesseract    no
+  pipewire     no
+  pw-cli       no
+  wireplumber  no
+  wl-copy      no
+  wl-paste     no
+  hyprctl      no
+  busctl       yes
+  gdbus        yes
+
+HARDWARE
+  CPU: AMD EPYC 9D64 88-Core Processor (2 threads)
+  RAM: 7.7 GB
+  Low-spec (Fast Render suggested): yes
+
+VERDICT
+  Capture backend: none detected
+  Capture UX:      UNKNOWN — no graphical session detected (headless/SSH/sandbox?)
+  Global hotkeys:  portal missing — fallback: map CLI capture commands in DE shortcut settings
+  OCR (Phase 2):   Tesseract missing — app must offer install

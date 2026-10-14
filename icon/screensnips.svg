@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Screensnips app icon — icon family anchor geometry (ICON-FAMILY.md):
+       full-bleed rounded tile, one flat white glyph. Tile radius 22.5%.
+       Family tint for Screensnips: coral red (siblings: Fable indigo,
+       Profiler Bondi blue). Glyph: a crop frame being snipped — the
+       selection corners from DESIGN.md section 5, cut by scissors. -->
+  <defs>
+    <linearGradient id="tile" x1="64" y1="32" x2="448" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF6B4A"/>
+      <stop offset="1" stop-color="#D63A2F"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#tile)"/>
+  <g stroke="#FFFFFF" fill="none" stroke-width="34">
+    <path d="M118 200 L118 118 L200 118"/>
+    <path d="M312 118 L394 118 L394 200"/>
+    <path d="M118 312 L118 394 L200 394"/>
+    <path d="M312 394 L394 394 L394 312"/>
+  </g>
+  <line x1="214" y1="298" x2="298" y2="214" stroke="#FFFFFF" stroke-width="20" stroke-dasharray="25 19"/>
+  <g stroke="#FFFFFF" fill="none" stroke-width="16">
+    <circle cx="176" cy="336" r="19"/>
+    <circle cx="336" cy="176" r="19"/>
+  </g>
+</svg>

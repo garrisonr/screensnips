@@ -1,0 +1,10 @@
+[package]
+name = "shot-capture"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Screensnips capture backends: environment detection (portal / wlroots / X11) + the xdg-desktop-portal Screenshot backend via zbus. Backends are concrete, per the plan — no leaky universal abstraction."
+
+[dependencies]
+zbus = "5"
+zvariant = "5"

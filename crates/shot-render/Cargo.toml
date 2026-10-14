@@ -1,0 +1,10 @@
+[package]
+name = "shot-render"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Screensnips software renderer (prototype): beautify composite (background, padding, rounded corners, downscaled-blur shadow) + vector annotation rasterization from shot-model documents. Pure Rust, no GPU, no image-codec deps."
+
+[dependencies]
+shot-model = { path = "../shot-model" }
+ab_glyph = "0.2"

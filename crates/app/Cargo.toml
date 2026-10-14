@@ -1,0 +1,24 @@
+[package]
+name = "screensnips"
+version = "0.1.0"
+edition = "2021"
+description = "Screensnips — the app. Tauri v2 shell over shot-capture / shot-model / shot-render. Detached workspace (like the bench) so the family crates stay buildable without WebKitGTK dev libs."
+
+[workspace]
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+png = "0.17"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
+shot-model = { path = "../shot-model" }
+shot-render = { path = "../shot-render" }
+shot-capture = { path = "../shot-capture" }
+shot-library = { path = "../shot-library" }
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[profile.release]
+opt-level = 2

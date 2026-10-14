@@ -1,0 +1,10 @@
+[package]
+name = "screensnips-framebench"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Screensnips Step 0 frame-pipeline benchmark (Rust side): full-frame copy, worker-thread thumbnails, shadow blur, beautify composite, and chunked stream throughput at screenshot resolutions. Pure std, no dependencies."
+
+[[bin]]
+name = "screensnips-framebench"
+path = "src/main.rs"

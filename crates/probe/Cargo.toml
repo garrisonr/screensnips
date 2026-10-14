@@ -1,0 +1,10 @@
+[package]
+name = "screensnips-probe"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Screensnips Step 0 capability probe: reports what capture backends and capture UX a Linux machine can actually support. Pure std, no dependencies."
+
+[[bin]]
+name = "screensnips-probe"
+path = "src/main.rs"

@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Screensnips</title>
+<style>
+  :root{
+    --accent:#6fd3ff; --ink:#f5f9ff; --muted:#a9bed6;
+    --surface:rgba(26,32,44,.92); --rail:rgba(18,22,32,.96);
+    --border:rgba(255,255,255,.22); --danger:#ff6b81;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,"Inter",sans-serif;background:#14181f;color:var(--ink)}
+  header{display:flex;align-items:center;gap:.75rem;padding:.6rem 1rem;background:var(--rail);border-bottom:1px solid var(--border)}
+  header h1{font-size:1.05rem;margin:0;letter-spacing:-.02em}
+  .badge{font-size:.72rem;color:var(--muted);border:1px solid var(--border);padding:.15rem .5rem;border-radius:999px}
+  button{background:#232b3a;color:var(--ink);border:1px solid var(--border);border-radius:999px;height:2rem;padding:0 .9rem;cursor:pointer}
+  button.primary{background:var(--accent);color:#0b1220;border-color:transparent;font-weight:600}
+  button.active{outline:2px solid var(--accent)}
+  main{display:grid;grid-template-columns:228px 1fr 320px;gap:0;height:calc(100vh - 49px)}
+  nav#library{background:var(--rail);border-right:1px solid var(--border);padding:.7rem;overflow:auto}
+  nav#library h2{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:.1rem 0 .5rem;display:flex;align-items:center}
+  nav#library h2 button{margin-left:auto;height:1.5rem;padding:0 .5rem;font-size:.72rem}
+  .lib-entry{display:block;width:100%;text-align:left;background:#1b222f;border:1px solid var(--border);border-radius:12px;padding:.45rem;margin-bottom:.55rem;cursor:pointer;height:auto}
+  .lib-entry:hover{border-color:var(--accent)}
+  .lib-entry canvas{width:100%;border-radius:7px;background:#0d0f13}
+  .lib-name{font-size:.7rem;color:var(--ink);word-break:break-all;margin-top:.35rem}
+  .lib-meta{font-size:.68rem;color:var(--muted);margin-top:.15rem}
+  .lib-empty{font-size:.75rem;color:var(--muted);line-height:1.45}
+  #stage{overflow:auto;padding:1rem;display:flex;flex-direction:column;gap:.5rem;align-items:flex-start}
+  #canvasWrap{position:relative;line-height:0}
+  canvas{max-width:100%}
+  #overlay{position:absolute;left:0;top:0}
+  aside{background:var(--surface);border-left:1px solid var(--border);padding:1rem;overflow:auto}
+  aside h2{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:1rem 0 .5rem}
+  aside h2:first-child{margin-top:0}
+  .tools{display:flex;flex-wrap:wrap;gap:.4rem}
+  label{display:block;font-size:.8rem;color:var(--muted);margin:.5rem 0 .2rem}
+  input[type=range]{width:100%}
+  select{width:100%;height:2rem;border-radius:9px;background:#232b3a;color:var(--ink);border:1px solid var(--border);padding:0 .5rem}
+  #preview{width:100%;border:1px solid var(--border);border-radius:12px;background:#0d0f13}
+  #status{font-size:.8rem;color:var(--muted);padding:.3rem 0}
+  .privacy{font-size:.75rem;color:var(--muted);border:1px dashed var(--border);border-radius:12px;padding:.5rem .6rem}
+  .swatches{display:flex;gap:.4rem;margin:.4rem 0}
+  .swatch{width:1.7rem;height:1.7rem;border-radius:50%;padding:0;border:2px solid rgba(255,255,255,.35)}
+  .swatch.active{outline:2px solid var(--accent);outline-offset:2px}
+  .stampbar{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.4rem}
+  .stampbar button{font-size:1rem;padding:0 .6rem}
+  #quickbar{display:none;gap:.5rem;align-items:center}
+  #quickbar.show{display:flex}
+  #banner{display:none;border:1px solid var(--accent);border-radius:12px;padding:.55rem .7rem;font-size:.8rem;background:rgba(111,211,255,.08)}
+  #banner.show{display:block}
+  details.diag{border:1px solid var(--border);border-radius:12px;padding:.5rem .6rem;font-size:.75rem}
+  details.diag summary{cursor:pointer;color:var(--ink);font-size:.8rem}
+  details.diag table{border-collapse:collapse;margin-top:.4rem}
+  details.diag td{padding:.12rem .4rem .12rem 0;color:var(--muted);vertical-align:top}
+  details.diag td:first-child{color:var(--ink);white-space:nowrap}
+  .row{display:flex;gap:.5rem;align-items:center}
+  .row > *{flex:1}
+  .row > button{flex:0 0 auto}
+  select.inline{width:auto;height:2rem}
+  @media (max-width:1000px){
+    main{grid-template-columns:1fr;height:auto}
+    nav#library{order:3;border-right:none;border-top:1px solid var(--border)}
+    aside{border-left:none;border-top:1px solid var(--border)}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;animation:none !important;scroll-behavior:auto !important}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Screensnips</h1>
+  <span class="badge" id="envBadge">detecting…</span>
+  <span style="flex:1"></span>
+  <select id="delaySel" class="inline" title="Wait before capturing — time to arrange windows">
+    <option value="0">No delay</option>
+    <option value="3">3s delay</option>
+    <option value="5">5s delay</option>
+    <option value="10">10s delay</option>
+  </select>
+  <button id="btnCapture" class="primary">Capture</button>
+  <button id="btnInstant" title="Grab the full screen immediately, no picker">⚡ Instant</button>
+  <button id="btnCopy">Copy</button>
+  <button id="btnExport">Export PNG</button>
+</header>
+<main>
+  <nav id="library">
+    <h2>Library <button id="btnLibRefresh" title="Rescan the library folder">↻</button></h2>
+    <div id="libList"><div class="lib-empty">Nothing yet. Export a shot and it lives here — reopen any entry to keep editing it.</div></div>
+  </nav>
+  <section id="stage">
+    <div class="privacy">Local only. No account, no cloud — captures and edits never leave this machine.</div>
+    <div id="banner">Your shots live in <b>~/Pictures/Screensnips</b> — every export saves the picture, the original shot, and an annotations file, so the library on the left can reopen any shot with its annotations still editable. <button id="btnBannerOk">Got it</button></div>
+    <div id="quickbar">
+      <span style="font-size:.85rem">Nice shot. Now what?</span>
+      <button id="btnQCopy" class="primary">Copy</button>
+      <button id="btnQSave">Save PNG</button>
+      <button id="btnQDiscard">Discard</button>
+    </div>
+    <div id="canvasWrap">
+      <canvas id="editCanvas" width="960" height="540"></canvas>
+      <canvas id="overlay" width="960" height="540"></canvas>
+    </div>
+    <div id="status">Capture opens the system picker so you frame the shot first (area, window, or screen). ⚡ Instant grabs the whole screen immediately.</div>
+  </section>
+  <aside>
+    <h2>Tools</h2>
+    <div class="tools" id="tools">
+      <button data-tool="arrow" class="active">Arrow</button>
+      <button data-tool="line">Line</button>
+      <button data-tool="pen">✎ Pen</button>
+      <button data-tool="rect">Rect</button>
+      <button data-tool="ellipse">Ellipse</button>
+      <button data-tool="highlight">Highlight</button>
+      <button data-tool="step">Step ●</button>
+      <button data-tool="text">Text</button>
+      <button data-tool="callout">💬 Callout</button>
+      <button data-tool="spotlight">🔦 Spotlight</button>
+      <button data-tool="blur">Blur</button>
+      <button data-tool="pixelate">Pixelate</button>
+      <button data-tool="select">Select / Move</button>
+      <button data-tool="crop">✂ Crop</button>
+      <button id="btnDelete">Delete selected</button>
+    </div>
+    <div class="stampbar" id="stamps" title="Stamps — Snagit's clip art, drawn fresh every time">
+      <button data-stamp="check" title="Check">✓</button>
+      <button data-stamp="cross" title="Cross">✕</button>
+      <button data-stamp="star" title="Star">★</button>
+      <button data-stamp="warning" title="Warning">⚠</button>
+      <button data-stamp="arrow_up" title="Arrow up">⬆</button>
+    </div>
+    <label>Color</label>
+    <div class="swatches" id="swatches">
+      <button class="swatch active" data-color="255,59,48" style="background:rgb(255,59,48)" title="Red"></button>
+      <button class="swatch" data-color="255,149,0" style="background:rgb(255,149,0)" title="Orange"></button>
+      <button class="swatch" data-color="255,213,79" style="background:rgb(255,213,79)" title="Yellow"></button>
+      <button class="swatch" data-color="52,199,89" style="background:rgb(52,199,89)" title="Green"></button>
+      <button class="swatch" data-color="0,122,255" style="background:rgb(0,122,255)" title="Blue"></button>
+      <button class="swatch" data-color="255,255,255" style="background:rgb(255,255,255)" title="White"></button>
+    </div>
+    <h2>Beautify</h2>
+    <label>Padding <span id="padVal"></span></label>
+    <input type="range" id="pad" min="0" max="0.18" step="0.005" value="0.06">
+    <label><input type="checkbox" id="padLink" checked> Same padding on all sides</label>
+    <div id="padSides" style="display:none">
+      <label>Top <span id="padTopVal"></span></label>
+      <input type="range" id="padTop" min="0" max="0.18" step="0.005" value="0.06">
+      <label>Right <span id="padRightVal"></span></label>
+      <input type="range" id="padRight" min="0" max="0.18" step="0.005" value="0.06">
+      <label>Bottom <span id="padBottomVal"></span></label>
+      <input type="range" id="padBottom" min="0" max="0.18" step="0.005" value="0.06">
+      <label>Left <span id="padLeftVal"></span></label>
+      <input type="range" id="padLeft" min="0" max="0.18" step="0.005" value="0.06">
+    </div>
+    <label>Corner radius <span id="radVal"></span></label>
+    <input type="range" id="rad" min="0" max="0.05" step="0.002" value="0.012">
+    <label><input type="checkbox" id="shadow" checked> Drop shadow</label>
+    <label>Background</label>
+    <select id="bg">
+      <option value="indigo">Brand indigo</option>
+      <option value="dark">Near black</option>
+      <option value="light">Paper</option>
+      <option value="sunset">Sunset gradient</option>
+      <option value="blurred">Blurred screenshot</option>
+    </select>
+    <label>Canvas shape (grows the canvas — never crops your shot)</label>
+    <select id="aspect">
+      <option value="">Auto — fit the shot</option>
+      <option value="1">Square 1:1</option>
+      <option value="1.7777778">Landscape 16:9</option>
+      <option value="1.3333334">Classic 4:3</option>
+      <option value="1.5">Photo 3:2</option>
+      <option value="0.5625">Portrait 9:16</option>
+    </select>
+    <label>Presets</label>
+    <div class="row">
+      <select id="presetSel"></select>
+      <button id="btnPresetApply">Apply</button>
+    </div>
+    <div class="row" style="margin-top:.4rem">
+      <button id="btnPresetSave">Save current as…</button>
+      <button id="btnPresetDelete">Delete</button>
+    </div>
+    <h2>Output</h2>
+    <div class="row">
+      <select id="fmtSel">
+        <option value="png">PNG</option>
+        <option value="jpg">JPG</option>
+        <option value="webp">WebP</option>
+      </select>
+      <select id="scaleSel">
+        <option value="1">1× size</option>
+        <option value="2">2× size</option>
+      </select>
+      <button id="btnExportFmt">Export</button>
+    </div>
+    <h2>Preview (export truth)</h2>
+    <canvas id="preview" width="288" height="160"></canvas>
+    <h2>Help</h2>
+    <details class="diag">
+      <summary>Diagnostics &amp; capture backend</summary>
+      <label>Capture backend</label>
+      <select id="backendSel">
+        <option value="auto">Auto (recommended)</option>
+        <option value="portal">System picker (portal)</option>
+        <option value="wlroots">wlroots</option>
+        <option value="x11">X11</option>
+      </select>
+      <div id="backendNote" style="margin:.35rem 0"></div>
+      <table id="diagTable"></table>
+      <p>On this desktop the screenshot itself comes from the system's own picker — Screensnips hands you the frame the moment you've framed it. One honest gap: GNOME doesn't offer apps a global-hotkey service here, so for a keyboard shortcut, open your desktop's keyboard settings and bind a key to <b>screensnips --capture=picker</b> (region/window picker) or <b>screensnips --capture=full</b> (instant full screen).</p>
+      <p>Framing your own region on the canvas, pinning a shot to the desktop, and drag-out to other apps are planned, not present — nothing here pretends otherwise.</p>
+    </details>
+    <div class="row" style="margin-top:.7rem">
+      <button id="btnBug">Report a Bug</button>
+      <button id="btnFeature">Request a Feature</button>
+    </div>
+  </aside>
+</main>
+<script>
+const invoke = window.__TAURI__.core.invoke;
+const protoBase = navigator.userAgent.includes('Windows') ? 'http://shot.localhost' : 'shot://localhost';
+const editCanvas = document.getElementById('editCanvas');
+const overlay = document.getElementById('overlay');
+const preview = document.getElementById('preview');
+const statusEl = document.getElementById('status');
+const ectx = editCanvas.getContext('2d');
+const octx = overlay.getContext('2d');
+const pctx = preview.getContext('2d');
+
+let doc = null, tool = 'arrow', selectedId = null, drag = null, moveOffset = null;
+let imgW = 0, imgH = 0, pendingCrop = null;
+let curColor = { r:255, g:59, b:48, a:255 };
+let curStamp = 'check';
+let customBg = null;
+let shadowCfg = { blur:0.03, offset_y:0.012, opacity:0.35 };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function strokeStyle(extra){ return Object.assign({ stroke: curColor, stroke_width: 0.004, fill: null, font_size: null }, extra || {}); }
+function snap45(s, p, shift){
+  if(!shift) return p;
+  const dx = p.x - s.x, dy = p.y - s.y;
+  const a = Math.round(Math.atan2(dy, dx) / (Math.PI/4)) * (Math.PI/4);
+  const len = Math.hypot(dx, dy);
+  return { x: s.x + len*Math.cos(a), y: s.y + len*Math.sin(a) };
+}
+
+function setStatus(s){ statusEl.textContent = s; }
+function css(color){ return `rgba(${color.r},${color.g},${color.b},${color.a/255})`; }
+
+async function fetchFrame(route){
+  const res = await fetch(`${protoBase}/${route}`);
+  if(!res.ok) throw new Error(route + ' ' + res.status);
+  const w = +res.headers.get('X-Width'), h = +res.headers.get('X-Height');
+  if(!w || !h) throw new Error('frame headers missing on ' + route);
+  const buf = new Uint8Array(await res.arrayBuffer());
+  if(buf.length !== w*h*4) throw new Error(`frame size mismatch on ${route}: got ${buf.length}, want ${w*h*4}`);
+  return { w, h, data: new ImageData(new Uint8ClampedArray(buf.buffer, buf.byteOffset, w*h*4), w, h) };
+}
+
+async function drawEditor(){
+  if(!imgW) return;
+  const f = await fetchFrame('source');
+  editCanvas.width = f.w; editCanvas.height = f.h;
+  overlay.width = f.w; overlay.height = f.h;
+  ectx.putImageData(f.data, 0, 0);
+  drawOverlay();
+}
+
+async function drawPreview(){
+  try{
+    const f = await fetchFrame('rendered');
+    preview.width = f.w; preview.height = f.h;
+    pctx.putImageData(f.data, 0, 0);
+  }catch(e){ /* no capture yet */ }
+}
+
+function primBBox(p){
+  const k = p.kind;
+  const box = (x,y,w,h)=>({x,y,w,h});
+  switch(k.type){
+    case 'arrow': case 'line': {
+      const x=Math.min(k.from.x,k.to.x), y=Math.min(k.from.y,k.to.y);
+      return box(x,y,Math.abs(k.to.x-k.from.x)||0.02,Math.abs(k.to.y-k.from.y)||0.02);
+    }
+    case 'rect': case 'ellipse': case 'highlight': case 'blur': case 'pixelate': case 'spotlight': return k.rect;
+    case 'text': case 'step_badge': return box(k.at.x,k.at.y,0.05,0.05);
+    case 'stamp': return box(k.at.x,k.at.y,k.scale, imgW ? k.scale*imgW/imgH : k.scale);
+    case 'callout': {
+      const fs = p.style.font_size ?? 0.045;
+      const lines = k.text.split('\n');
+      const w = 0.03 + Math.max(...lines.map(l => l.length)) * 0.62 * fs;
+      const hPx = lines.length * (fs*imgW) * 1.3 + (fs*imgW) * 0.63;
+      return box(k.at.x, k.at.y, w, imgH ? hPx/imgH : w);
+    }
+    case 'freehand': {
+      let x0=1,y0=1,x1=0,y1=0;
+      for(const pt of k.points){ x0=Math.min(x0,pt.x); y0=Math.min(y0,pt.y); x1=Math.max(x1,pt.x); y1=Math.max(y1,pt.y); }
+      return box(x0,y0,x1-x0,y1-y0);
+    }
+  }
+  return box(0,0,1,1);
+}
+
+function drawHandles(b){
+  const pts = [
+    [b.x,b.y],[b.x+b.w/2,b.y],[b.x+b.w,b.y],
+    [b.x,b.y+b.h/2],[b.x+b.w,b.y+b.h/2],
+    [b.x,b.y+b.h],[b.x+b.w/2,b.y+b.h],[b.x+b.w,b.y+b.h]
+  ];
+  octx.save();
+  octx.strokeStyle = '#6fd3ff'; octx.setLineDash([6,4]); octx.lineWidth = 1.5;
+  octx.strokeRect(b.x*imgW, b.y*imgH, b.w*imgW, b.h*imgH);
+  octx.setLineDash([]);
+  for(const [hx,hy] of pts){
+    octx.beginPath();
+    octx.arc(hx*imgW, hy*imgH, Math.max(6, imgW*0.006), 0, Math.PI*2);
+    octx.fillStyle = '#fff'; octx.fill();
+    octx.lineWidth = 2; octx.strokeStyle = '#1477a8'; octx.stroke();
+  }
+  octx.restore();
+}
+
+function drawOverlay(temp){
+  octx.clearRect(0,0,overlay.width,overlay.height);
+  if(!doc) return;
+  // spotlights dim everything outside their window, under all ink
+  for(const p of doc.primitives){
+    if(p.kind.type !== 'spotlight') continue;
+    const r = p.kind.rect;
+    octx.save();
+    octx.fillStyle = 'rgba(0,0,0,0.59)';
+    octx.fillRect(0, 0, imgW, r.y*imgH);
+    octx.fillRect(0, (r.y+r.h)*imgH, imgW, imgH - (r.y+r.h)*imgH);
+    octx.fillRect(0, r.y*imgH, r.x*imgW, r.h*imgH);
+    octx.fillRect((r.x+r.w)*imgW, r.y*imgH, imgW - (r.x+r.w)*imgW, r.h*imgH);
+    octx.restore();
+  }
+  let stepN = 0;
+  for(const p of doc.primitives){
+    const k = p.kind, st = p.style;
+    octx.save();
+    octx.strokeStyle = css(st.stroke); octx.fillStyle = css(st.stroke);
+    octx.lineWidth = Math.max(1.5, st.stroke_width*imgW);
+    const X = v => v*imgW, Y = v => v*imgH;
+    if(k.type==='arrow' || k.type==='line'){
+      octx.beginPath(); octx.moveTo(X(k.from.x),Y(k.from.y)); octx.lineTo(X(k.to.x),Y(k.to.y)); octx.stroke();
+      if(k.type==='arrow'){
+        const ang = Math.atan2(Y(k.to.y)-Y(k.from.y), X(k.to.x)-X(k.from.x));
+        const hl = Math.max(12, st.stroke_width*imgW*4);
+        octx.beginPath();
+        octx.moveTo(X(k.to.x),Y(k.to.y));
+        octx.lineTo(X(k.to.x)-hl*Math.cos(ang-0.42), Y(k.to.y)-hl*Math.sin(ang-0.42));
+        octx.lineTo(X(k.to.x)-hl*Math.cos(ang+0.42), Y(k.to.y)-hl*Math.sin(ang+0.42));
+        octx.closePath(); octx.fill();
+      }
+    } else if(k.type==='rect'){
+      if(st.fill){ octx.fillStyle = css(st.fill); octx.fillRect(X(k.rect.x),Y(k.rect.y),k.rect.w*imgW,k.rect.h*imgH); }
+      octx.strokeRect(X(k.rect.x),Y(k.rect.y),k.rect.w*imgW,k.rect.h*imgH);
+    } else if(k.type==='ellipse'){
+      octx.beginPath();
+      octx.ellipse(X(k.rect.x+k.rect.w/2), Y(k.rect.y+k.rect.h/2), k.rect.w*imgW/2, k.rect.h*imgH/2, 0, 0, Math.PI*2);
+      if(st.fill){ octx.fillStyle = css(st.fill); octx.fill(); }
+      octx.stroke();
+    } else if(k.type==='highlight'){
+      octx.globalAlpha = 0.35; octx.fillRect(X(k.rect.x),Y(k.rect.y),k.rect.w*imgW,k.rect.h*imgH); octx.globalAlpha = 1;
+    } else if(k.type==='blur' || k.type==='pixelate'){
+      octx.globalAlpha = 0.45; octx.fillStyle = '#888';
+      octx.fillRect(X(k.rect.x),Y(k.rect.y),k.rect.w*imgW,k.rect.h*imgH); octx.globalAlpha = 1;
+      octx.strokeStyle = '#fff'; octx.setLineDash([4,4]); octx.strokeRect(X(k.rect.x),Y(k.rect.y),k.rect.w*imgW,k.rect.h*imgH); octx.setLineDash([]);
+    } else if(k.type==='step_badge'){
+      stepN++;
+      const r = Math.max(13, imgW*0.02);
+      octx.beginPath(); octx.arc(X(k.at.x),Y(k.at.y),r,0,Math.PI*2); octx.fill();
+      octx.fillStyle = '#fff'; octx.font = `bold ${r*1.05}px system-ui`;
+      octx.textAlign='center'; octx.textBaseline='middle';
+      octx.fillText(String(stepN), X(k.at.x), Y(k.at.y)+1);
+    } else if(k.type==='text'){
+      octx.fillStyle = css(st.stroke);
+      octx.font = `600 ${(st.font_size ?? 0.045)*imgW}px system-ui`;
+      octx.textAlign = 'left'; octx.textBaseline = 'top';
+      k.text.split('\n').forEach((line, i) => {
+        octx.fillText(line, X(k.at.x), Y(k.at.y) + i*(st.font_size ?? 0.045)*imgW*1.3);
+      });
+    } else if(k.type==='freehand'){
+      octx.beginPath();
+      k.points.forEach((pt, i) => { if(i===0) octx.moveTo(X(pt.x), Y(pt.y)); else octx.lineTo(X(pt.x), Y(pt.y)); });
+      octx.stroke();
+    } else if(k.type==='stamp'){
+      const glyphs = { check:'✓', cross:'✕', star:'★', warning:'⚠', arrow_up:'⬆' };
+      const side = k.scale*imgW;
+      octx.fillStyle = css(st.stroke);
+      octx.font = `${side*0.85}px system-ui`;
+      octx.textAlign = 'center'; octx.textBaseline = 'middle';
+      octx.fillText(glyphs[k.stamp_id] || '?', X(k.at.x)+side/2, Y(k.at.y)+side/2);
+    } else if(k.type==='callout'){
+      const fs = (st.font_size ?? 0.045)*imgW;
+      const lines = k.text.split('\n');
+      const tw = Math.max(...lines.map(l => l.length)) * fs * 0.62;
+      const pad = fs*0.45;
+      const bw = tw + pad*2, bh = lines.length*fs*1.3 + pad*1.4;
+      const bx = X(k.at.x), by = Y(k.at.y);
+      octx.strokeStyle = css(st.stroke);
+      octx.beginPath();
+      octx.moveTo(Math.min(Math.max(X(k.tail.x), bx), bx+bw), Math.min(Math.max(Y(k.tail.y), by), by+bh));
+      octx.lineTo(X(k.tail.x), Y(k.tail.y));
+      octx.stroke();
+      octx.beginPath(); octx.arc(X(k.tail.x), Y(k.tail.y), Math.max(3, fs*0.12), 0, Math.PI*2);
+      octx.fillStyle = css(st.stroke); octx.fill();
+      octx.fillStyle = st.fill ? css(st.fill) : 'rgba(17,20,27,0.93)';
+      octx.fillRect(bx, by, bw, bh);
+      octx.strokeRect(bx, by, bw, bh);
+      octx.fillStyle = '#fff';
+      octx.font = `600 ${fs}px system-ui`;
+      octx.textAlign = 'left'; octx.textBaseline = 'top';
+      lines.forEach((line, i) => octx.fillText(line, bx+pad, by+pad*0.65 + i*fs*1.3));
+    }
+    octx.restore();
+    if(p.id === selectedId) drawHandles(primBBox(p));
+  }
+  if(temp){
+    octx.save();
+    octx.strokeStyle = '#fff'; octx.lineWidth = 1.5; octx.setLineDash([5,4]);
+    octx.strokeRect(temp.x*imgW, temp.y*imgH, temp.w*imgW, temp.h*imgH);
+    octx.setLineDash([]);
+    octx.fillStyle = '#fff'; octx.font = '13px system-ui';
+    const label = `${Math.round(temp.w*imgW)} × ${Math.round(temp.h*imgH)}`;
+    octx.fillText(label, temp.x*imgW+4, temp.y*imgH-6);
+    octx.restore();
+  }
+  if(pendingCrop){
+    const c = pendingCrop;
+    octx.save();
+    octx.fillStyle = 'rgba(0,0,0,0.45)';
+    octx.fillRect(0, 0, imgW, c.y*imgH);
+    octx.fillRect(0, (c.y+c.h)*imgH, imgW, imgH - (c.y+c.h)*imgH);
+    octx.fillRect(0, c.y*imgH, c.x*imgW, c.h*imgH);
+    octx.fillRect((c.x+c.w)*imgW, c.y*imgH, imgW - (c.x+c.w)*imgW, c.h*imgH);
+    octx.restore();
+    drawHandles(c);
+    octx.save();
+    octx.fillStyle = '#fff'; octx.font = '13px system-ui';
+    octx.fillText(`${Math.round(c.w*imgW)} × ${Math.round(c.h*imgH)} — Enter crops, Esc cancels`,
+      c.x*imgW+4, Math.max(14, c.y*imgH-6));
+    octx.restore();
+  }
+}
+
+function normPos(ev){
+  const r = overlay.getBoundingClientRect();
+  return {
+    x: Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width)),
+    y: Math.min(1, Math.max(0, (ev.clientY - r.top) / r.height))
+  };
+}
+
+const HANDLE_ORDER = ['nw','n','ne','e','se','s','sw','w'];
+function handlePoints(b){
+  return [
+    [b.x,b.y],[b.x+b.w/2,b.y],[b.x+b.w,b.y],
+    [b.x+b.w,b.y+b.h/2],[b.x+b.w,b.y+b.h],
+    [b.x+b.w/2,b.y+b.h],[b.x,b.y+b.h],[b.x,b.y+b.h/2]
+  ];
+}
+function hitHandle(p){
+  if(selectedId == null || !doc) return -1;
+  const prim = doc.primitives.find(x => x.id === selectedId);
+  if(!prim) return -1;
+  const b = primBBox(prim);
+  const r = overlay.getBoundingClientRect();
+  const pts = handlePoints(b);
+  for(let i=0;i<8;i++){
+    // compare in display space: normalized coords scaled by canvas display size
+    const dx = (p.x - pts[i][0]) * r.width, dy = (p.y - pts[i][1]) * r.height;
+    if(Math.abs(dx) <= 14 && Math.abs(dy) <= 14) return i;
+  }
+  return -1;
+}
+
+overlay.addEventListener('pointerdown', ev => {
+  if(!doc) return;
+  const p = normPos(ev);
+  overlay.setPointerCapture(ev.pointerId);
+  if(tool === 'select'){
+    const hi = hitHandle(p);
+    if(hi >= 0){
+      const prim = doc.primitives.find(x => x.id === selectedId);
+      drag = { mode:'resize', handle:hi, start:p, orig:{...primBBox(prim)}, cur:null };
+      return;
+    }
+    // topmost primitive whose bbox contains the point
+    for(let i = doc.primitives.length-1; i>=0; i--){
+      const b = primBBox(doc.primitives[i]);
+      if(p.x>=b.x && p.x<=b.x+b.w && p.y>=b.y && p.y<=b.y+b.h){
+        selectedId = doc.primitives[i].id;
+        drag = { mode:'move', start:p, moved:false };
+        drawOverlay();
+        return;
+      }
+    }
+    selectedId = null; drawOverlay(); return;
+  }
+  if(tool === 'step'){
+    addPrim({ type:'step_badge', at:p });
+    return;
+  }
+  if(tool === 'text'){
+    const t = prompt('Text label:');
+    if(t) addPrim({ type:'text', at:p, text:t }, { stroke: curColor, stroke_width:0.004, fill:null, font_size:0.045 });
+    return;
+  }
+  if(tool === 'stamp'){
+    addPrim({ type:'stamp', at:p, stamp_id: curStamp, scale: 0.09 }, strokeStyle());
+    return;
+  }
+  if(tool === 'pen'){
+    drag = { mode:'pen', points:[p] };
+    return;
+  }
+  drag = { mode:'create', start:p, cur:p };
+});
+overlay.addEventListener('pointermove', ev => {
+  if(!drag) return;
+  const p = normPos(ev);
+  if(drag.mode === 'resize'){
+    const dx = p.x - drag.start.x, dy = p.y - drag.start.y;
+    const o = drag.orig;
+    let x0 = o.x, y0 = o.y, x1 = o.x + o.w, y1 = o.y + o.h;
+    const H = HANDLE_ORDER[drag.handle];
+    if(H === 'nw' || H === 'sw' || H === 'w') x0 += dx;
+    if(H === 'ne' || H === 'e' || H === 'se') x1 += dx;
+    if(H === 'nw' || H === 'n' || H === 'ne') y0 += dy;
+    if(H === 'sw' || H === 's' || H === 'se') y1 += dy;
+    // minimum size + stay in frame
+    if(x1 - x0 < 0.01) { if(H.includes('e')) x1 = x0 + 0.01; else x0 = x1 - 0.01; }
+    if(y1 - y0 < 0.01) { if(H.includes('s')) y1 = y0 + 0.01; else y0 = y1 - 0.01; }
+    x0 = Math.max(0, Math.min(1, x0)); y0 = Math.max(0, Math.min(1, y0));
+    x1 = Math.max(0, Math.min(1, x1)); y1 = Math.max(0, Math.min(1, y1));
+    drag.cur = { x:x0, y:y0, w:x1-x0, h:y1-y0 };
+    drawOverlay(drag.cur);
+    return;
+  }
+  if(drag.mode === 'pen'){
+    const last = drag.points[drag.points.length-1];
+    if(Math.hypot(p.x-last.x, p.y-last.y) > 0.003) drag.points.push(p);
+    drawOverlay();
+    octx.save();
+    octx.strokeStyle = css(curColor); octx.lineWidth = Math.max(1.5, 0.004*imgW);
+    octx.beginPath();
+    drag.points.forEach((pt, i) => { if(i===0) octx.moveTo(pt.x*imgW, pt.y*imgH); else octx.lineTo(pt.x*imgW, pt.y*imgH); });
+    octx.stroke();
+    octx.restore();
+    return;
+  }
+  if(drag.mode === 'create'){
+    drag.cur = p;
+    const x = Math.min(drag.start.x,p.x), y = Math.min(drag.start.y,p.y);
+    drawOverlay({ x, y, w: Math.abs(p.x-drag.start.x), h: Math.abs(p.y-drag.start.y) });
+  } else if(drag.mode === 'move'){
+    drag.moved = true;
+    drag.delta = { x: p.x - drag.start.x, y: p.y - drag.start.y };
+  }
+});
+overlay.addEventListener('pointerup', async ev => {
+  if(!drag) return;
+  const p = normPos(ev);
+  if(drag.mode === 'pen'){
+    if(drag.points.length >= 2) await addPrim({ type:'freehand', points: drag.points }, strokeStyle());
+    drag = null;
+    drawOverlay();
+    return;
+  }
+  if(drag.mode === 'resize'){
+    if(drag.cur) {
+      await invoke('resize_primitive', { id: selectedId, bbox: drag.cur });
+      await refresh();
+    }
+    drag = null;
+    drawOverlay();
+    return;
+  }
+  if(drag.mode === 'create'){
+    const s = drag.start;
+    const rect = { x: Math.min(s.x,p.x), y: Math.min(s.y,p.y), w: Math.abs(p.x-s.x), h: Math.abs(p.y-s.y) };
+    if(tool === 'crop'){
+      if(rect.w > 0.01 && rect.h > 0.01){
+        pendingCrop = rect;
+        setStatus('Crop staged — Enter applies it, Esc cancels.');
+      }
+      drag = null;
+      drawOverlay();
+      return;
+    }
+    if(tool === 'arrow'){ const to = snap45(s, p, ev.shiftKey); if(Math.abs(to.x-s.x)>0.005||Math.abs(to.y-s.y)>0.005) await addPrim({ type:'arrow', from:s, to }, strokeStyle()); }
+    else if(tool === 'line'){ const to = snap45(s, p, ev.shiftKey); if(Math.abs(to.x-s.x)>0.005||Math.abs(to.y-s.y)>0.005) await addPrim({ type:'line', from:s, to }, strokeStyle()); }
+    else if(tool === 'rect'){ if(rect.w>0.005&&rect.h>0.005) await addPrim({ type:'rect', rect, corner_radius:0.01 }, strokeStyle()); }
+    else if(tool === 'ellipse'){ if(rect.w>0.005&&rect.h>0.005) await addPrim({ type:'ellipse', rect }, strokeStyle()); }
+    else if(tool === 'highlight'){ if(rect.w>0.005&&rect.h>0.005) await addPrim({ type:'highlight', rect }, strokeStyle()); }
+    else if(tool === 'spotlight'){ if(rect.w>0.005&&rect.h>0.005) await addPrim({ type:'spotlight', rect }); }
+    else if(tool === 'callout'){
+      const t = prompt('Callout text:');
+      if(t) await addPrim({ type:'callout', at:p, tail:s, text:t }, { stroke: curColor, stroke_width:0.004, fill:null, font_size:0.045 });
+    }
+    else if(tool === 'blur'){ if(rect.w>0.005&&rect.h>0.005) await addPrim({ type:'blur', rect }); }
+    else if(tool === 'pixelate'){ if(rect.w>0.005&&rect.h>0.005) await addPrim({ type:'pixelate', rect }); }
+  } else if(drag.mode === 'move' && drag.delta && (Math.abs(drag.delta.x)>0.001 || Math.abs(drag.delta.y)>0.001)){
+    await invoke('move_primitive', { id: selectedId, dx: drag.delta.x, dy: drag.delta.y });
+    await refresh();
+  }
+  drag = null;
+  drawOverlay();
+});
+
+async function addPrim(kind, style){
+  const res = await invoke('add_primitive', { kind, style: style ?? null });
+  selectedId = res.id;
+  await refresh();
+}
+
+async function refresh(){
+  doc = await invoke('get_doc');
+  drawOverlay();
+  await drawPreview();
+}
+
+document.getElementById('tools').addEventListener('click', ev => {
+  const b = ev.target.closest('button[data-tool]');
+  if(!b) return;
+  tool = b.dataset.tool;
+  pendingCrop = null;
+  document.querySelectorAll('#tools button[data-tool]').forEach(x => x.classList.toggle('active', x === b));
+  document.querySelectorAll('#stamps button').forEach(x => x.classList.remove('active'));
+  drawOverlay();
+});
+document.getElementById('stamps').addEventListener('click', ev => {
+  const b = ev.target.closest('button[data-stamp]');
+  if(!b) return;
+  curStamp = b.dataset.stamp;
+  tool = 'stamp';
+  pendingCrop = null;
+  document.querySelectorAll('#tools button[data-tool]').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('#stamps button').forEach(x => x.classList.toggle('active', x === b));
+  setStatus('Stamp armed: ' + b.title + ' — click the shot to place it.');
+});
+document.getElementById('swatches').addEventListener('click', ev => {
+  const b = ev.target.closest('button[data-color]');
+  if(!b) return;
+  const parts = b.dataset.color.split(',').map(Number);
+  curColor = { r: parts[0], g: parts[1], b: parts[2], a: 255 };
+  document.querySelectorAll('#swatches .swatch').forEach(x => x.classList.toggle('active', x === b));
+});
+document.addEventListener('keydown', async ev => {
+  const tag = (ev.target.tagName || '').toLowerCase();
+  if(tag === 'input' || tag === 'select' || tag === 'textarea') return;
+  if(pendingCrop){
+    if(ev.key === 'Escape'){
+      pendingCrop = null;
+      setStatus('Crop cancelled.');
+      drawOverlay();
+    } else if(ev.key === 'Enter'){
+      const rect = pendingCrop;
+      pendingCrop = null;
+      try{
+        const res = await invoke('commit_crop', { rect });
+        imgW = res.width; imgH = res.height;
+        doc = await invoke('get_doc');
+        await drawEditor();
+        await drawPreview();
+        setStatus(`Cropped to ${res.width}×${res.height}` +
+          (res.dropped ? ` — ${res.dropped} annotation(s) fell outside and were removed.` : '.'));
+      }catch(e){ setStatus('Crop failed: ' + e); }
+    }
+    return;
+  }
+  if((ev.key === 'Delete' || ev.key === 'Backspace') && selectedId != null){
+    ev.preventDefault();
+    await invoke('remove_primitive', { id: selectedId });
+    selectedId = null;
+    await refresh();
+    return;
+  }
+  if(selectedId != null && ev.key.startsWith('Arrow') && imgW){
+    ev.preventDefault();
+    const step = ev.shiftKey ? 10 : 1;
+    const dx = ev.key === 'ArrowLeft' ? -step/imgW : ev.key === 'ArrowRight' ? step/imgW : 0;
+    const dy = ev.key === 'ArrowUp' ? -step/imgH : ev.key === 'ArrowDown' ? step/imgH : 0;
+    if(dx || dy){
+      await invoke('move_primitive', { id: selectedId, dx, dy });
+      await refresh();
+    }
+  }
+});
+document.getElementById('btnDelete').addEventListener('click', async () => {
+  if(selectedId == null) return;
+  await invoke('remove_primitive', { id: selectedId });
+  selectedId = null;
+  await refresh();
+});
+
+const BGS = {
+  indigo: { type:'solid', color:{r:88,g:101,b:220,a:255} },
+  dark:   { type:'solid', color:{r:24,g:24,b:28,a:255} },
+  light:  { type:'solid', color:{r:245,g:245,b:247,a:255} },
+  sunset: { type:'gradient', from:{r:255,g:94,b:98,a:255}, to:{r:255,g:195,b:113,a:255}, angle_deg:45 },
+  blurred:{ type:'blurred_screenshot' }
+};
+const $ = id => document.getElementById(id);
+function readBeautify(){
+  const linked = $('padLink').checked;
+  const padding = linked
+    ? { linked:true, top:parseFloat($('pad').value), right:parseFloat($('pad').value), bottom:parseFloat($('pad').value), left:parseFloat($('pad').value) }
+    : { linked:false, top:parseFloat($('padTop').value), right:parseFloat($('padRight').value), bottom:parseFloat($('padBottom').value), left:parseFloat($('padLeft').value) };
+  const asp = $('aspect').value;
+  return {
+    background: customBg ?? BGS[$('bg').value],
+    padding,
+    corner_radius: parseFloat($('rad').value),
+    shadow: { enabled: $('shadow').checked, blur: shadowCfg.blur, offset_y: shadowCfg.offset_y, opacity: shadowCfg.opacity },
+    aspect: asp === '' ? null : parseFloat(asp),
+    crop: null
+  };
+}
+function syncLabels(){
+  $('padVal').textContent = Math.round(parseFloat($('pad').value)*100) + '%';
+  for(const s of ['Top','Right','Bottom','Left'])
+    $('pad'+s+'Val').textContent = Math.round(parseFloat($('pad'+s).value)*100) + '%';
+  $('radVal').textContent = Math.round(parseFloat($('rad').value)*1000)/10 + '%';
+  $('padSides').style.display = $('padLink').checked ? 'none' : 'block';
+}
+async function pushBeautify(){
+  syncLabels();
+  if(!doc) return;
+  await invoke('set_beautify', { beautify: readBeautify() });
+  await drawPreview();
+}
+function applyBeautify(b){
+  customBg = null;
+  const eq = (a, c) => a && c && a.r===c.r && a.g===c.g && a.b===c.b && a.a===c.a;
+  let matched = null;
+  for(const [name, bg] of Object.entries(BGS)){
+    if(bg.type !== b.background.type) continue;
+    if(bg.type === 'solid' && eq(bg.color, b.background.color)) matched = name;
+    if(bg.type === 'gradient' && eq(bg.from, b.background.from) && eq(bg.to, b.background.to)) matched = name;
+    if(bg.type === 'blurred_screenshot') matched = name;
+  }
+  if(matched) $('bg').value = matched; else customBg = b.background;
+  const p = b.padding;
+  $('padLink').checked = !!p.linked;
+  $('pad').value = p.top;
+  $('padTop').value = p.top; $('padRight').value = p.right;
+  $('padBottom').value = p.bottom; $('padLeft').value = p.left;
+  $('rad').value = b.corner_radius;
+  $('shadow').checked = b.shadow.enabled;
+  shadowCfg = { blur: b.shadow.blur, offset_y: b.shadow.offset_y, opacity: b.shadow.opacity };
+  $('aspect').value = b.aspect == null ? '' : String(b.aspect);
+  syncLabels();
+}
+for(const id of ['pad','padTop','padRight','padBottom','padLeft','padLink','rad','shadow','aspect'])
+  $(id).addEventListener('input', pushBeautify);
+$('bg').addEventListener('input', () => { customBg = null; pushBeautify(); });
+
+let presetsCache = [];
+function fillPresets(sel){
+  const s = $('presetSel');
+  s.innerHTML = '';
+  for(const p of presetsCache){
+    const o = document.createElement('option');
+    o.value = p.name; o.textContent = p.name;
+    s.appendChild(o);
+  }
+  if(sel && presetsCache.some(p => p.name === sel)) s.value = sel;
+}
+async function loadPresets(){
+  try{ presetsCache = await invoke('get_presets'); fillPresets(); }catch(e){ /* presets unavailable */ }
+}
+$('btnPresetApply').addEventListener('click', async () => {
+  const p = presetsCache.find(x => x.name === $('presetSel').value);
+  if(!p) return;
+  applyBeautify(p.beautify);
+  await pushBeautify();
+  setStatus('Preset applied: ' + p.name);
+});
+$('btnPresetSave').addEventListener('click', async () => {
+  const name = prompt('Name this preset:');
+  if(!name) return;
+  try{
+    presetsCache = await invoke('save_preset', { name, beautify: readBeautify() });
+    fillPresets(name);
+    setStatus('Preset saved: ' + name);
+  }catch(e){ setStatus('Preset save failed: ' + e); }
+});
+$('btnPresetDelete').addEventListener('click', async () => {
+  const name = $('presetSel').value;
+  if(!name) return;
+  try{
+    presetsCache = await invoke('delete_preset', { name });
+    fillPresets();
+    setStatus('Preset deleted: ' + name);
+  }catch(e){ setStatus('Preset delete failed: ' + e); }
+});
+
+async function doCapture(interactive){
+  const delay = parseInt($('delaySel').value, 10) || 0;
+  try{
+    if(delay > 0){
+      for(let s = delay; s > 0; s--){
+        setStatus(`Capturing in ${s}… arrange your windows.`);
+        await sleep(1000);
+      }
+    }
+    setStatus(interactive
+      ? 'Opening the system screenshot picker — frame your shot, then it lands here…'
+      : 'Grabbing the full screen…');
+    const res = await invoke('capture', { interactive });
+    imgW = res.width; imgH = res.height;
+    selectedId = null; pendingCrop = null;
+    doc = await invoke('get_doc');
+    await drawEditor();
+    await drawPreview();
+    $('quickbar').classList.add('show');
+    setStatus(`Captured ${res.width}×${res.height} — ${res.path}`);
+  }catch(e){ setStatus('Capture failed: ' + e); }
+}
+document.getElementById('btnCapture').addEventListener('click', () => doCapture(true));
+document.getElementById('btnInstant').addEventListener('click', () => doCapture(false));
+async function doExportPng(){
+  try{
+    const path = await invoke('export_png');
+    setStatus('Exported → ' + path + ' (source shot + annotation sidecar saved with it)');
+    await loadLibrary();
+  }catch(e){ setStatus('Export failed: ' + e); }
+}
+document.getElementById('btnExport').addEventListener('click', doExportPng);
+$('btnQSave').addEventListener('click', doExportPng);
+async function doCopy(){
+  if(!doc){ setStatus('Nothing to copy yet — capture something first.'); return; }
+  try{ setStatus(await invoke('copy_rendered')); }
+  catch(e){ setStatus('Copy: ' + e); }
+}
+document.getElementById('btnCopy').addEventListener('click', doCopy);
+$('btnQCopy').addEventListener('click', doCopy);
+$('btnQDiscard').addEventListener('click', async () => {
+  try{ await invoke('clear_session'); }catch(e){ /* nothing to clear */ }
+  doc = null; imgW = 0; imgH = 0; selectedId = null; pendingCrop = null;
+  ectx.clearRect(0, 0, editCanvas.width, editCanvas.height);
+  octx.clearRect(0, 0, overlay.width, overlay.height);
+  pctx.clearRect(0, 0, preview.width, preview.height);
+  $('quickbar').classList.remove('show');
+  setStatus('Discarded. Nothing was saved.');
+});
+$('btnExportFmt').addEventListener('click', async () => {
+  try{
+    const path = await invoke('export_image', { format: $('fmtSel').value, scale: parseInt($('scaleSel').value, 10) });
+    setStatus('Exported → ' + path + ' (source shot + annotation sidecar saved with it)');
+    await loadLibrary();
+  }catch(e){ setStatus('Export failed: ' + e); }
+});
+$('btnBannerOk').addEventListener('click', () => {
+  localStorage.setItem('ss_intro_dismissed', '1');
+  $('banner').classList.remove('show');
+});
+$('btnBug').addEventListener('click', async () => {
+  try{ await invoke('report_bug'); setStatus('Opening the bug report form in your browser — diagnostics are already filled in.'); }
+  catch(e){ setStatus('Bug report: ' + e); }
+});
+$('btnFeature').addEventListener('click', async () => {
+  try{ await invoke('request_feature'); setStatus('Opening the feature request form in your browser.'); }
+  catch(e){ setStatus('Feature request: ' + e); }
+});
+const BACKEND_NOTES = {
+  auto: 'Screensnips picks the best backend for this desktop.',
+  portal: 'The system picker frames every shot — region, window, or screen.',
+  wlroots: 'Not built yet in this version — a capture will say so honestly instead of failing silently.',
+  x11: 'Not built yet in this version — a capture will say so honestly instead of failing silently.'
+};
+$('backendSel').addEventListener('change', async () => {
+  const backend = $('backendSel').value;
+  $('backendNote').textContent = BACKEND_NOTES[backend] || BACKEND_NOTES.auto;
+  try{
+    await invoke('save_settings', { settings: { backend } });
+    setStatus('Capture backend: ' + backend + ' (applies to the next capture).');
+  }catch(e){ setStatus('Settings save failed: ' + e); }
+});
+async function loadDiag(){
+  try{
+    const facts = await invoke('diag_info');
+    const table = $('diagTable');
+    table.innerHTML = '';
+    for(const [k, v] of Object.entries(facts)){
+      const tr = document.createElement('tr');
+      const td1 = document.createElement('td'); td1.textContent = k;
+      const td2 = document.createElement('td'); td2.textContent = v;
+      tr.appendChild(td1); tr.appendChild(td2);
+      table.appendChild(tr);
+    }
+  }catch(e){ /* diagnostics unavailable */ }
+}
+
+async function fetchThumb(path){
+  const res = await fetch(`${protoBase}/thumb?path=${encodeURIComponent(path)}`);
+  if(!res.ok) throw new Error('thumb ' + res.status);
+  const w = +res.headers.get('X-Width'), h = +res.headers.get('X-Height');
+  const buf = new Uint8Array(await res.arrayBuffer());
+  return new ImageData(new Uint8ClampedArray(buf.buffer, buf.byteOffset, w*h*4), w, h);
+}
+
+async function loadLibrary(){
+  const list = document.getElementById('libList');
+  let entries = [];
+  try{ entries = await invoke('library_list'); }catch(e){ /* library unavailable */ }
+  list.innerHTML = '';
+  if(!entries.length){
+    list.innerHTML = '<div class="lib-empty">Nothing yet. Export a shot and it lives here — reopen any entry to keep editing it.</div>';
+    return;
+  }
+  for(const e of entries){
+    const name = e.shot_path.split('/').pop();
+    const btn = document.createElement('button');
+    btn.className = 'lib-entry';
+    const cv = document.createElement('canvas');
+    cv.width = 200; cv.height = 90;
+    btn.appendChild(cv);
+    const nm = document.createElement('div');
+    nm.className = 'lib-name'; nm.textContent = name;
+    btn.appendChild(nm);
+    const meta = document.createElement('div');
+    meta.className = 'lib-meta';
+    const dims = e.width ? `${e.width}×${e.height}` : 'image';
+    const ann = e.sidecar_path
+      ? (e.sidecar_ok ? `${e.primitive_count} annotation${e.primitive_count === 1 ? '' : 's'}` : '⚠ sidecar unreadable')
+      : 'no annotations';
+    meta.textContent = `${dims} · ${ann}`;
+    btn.appendChild(meta);
+    btn.addEventListener('click', () => openEntry(e.shot_path));
+    list.appendChild(btn);
+    fetchThumb(e.shot_path).then(img => {
+      cv.width = img.width; cv.height = img.height;
+      cv.getContext('2d').putImageData(img, 0, 0);
+    }).catch(() => {});
+  }
+}
+
+async function openEntry(path){
+  try{
+    const res = await invoke('library_open', { shotPath: path });
+    imgW = res.width; imgH = res.height;
+    selectedId = null; pendingCrop = null;
+    doc = await invoke('get_doc');
+    await drawEditor();
+    await drawPreview();
+    setStatus(res.editable
+      ? `Reopened ${path.split('/').pop()} with its annotations editable.`
+      : `Opened ${path.split('/').pop()} (no annotations — a fresh document).`);
+  }catch(e){ setStatus('Open failed: ' + e); }
+}
+document.getElementById('btnLibRefresh').addEventListener('click', loadLibrary);
+
+(async () => {
+  try{
+    const env = await invoke('env_info');
+    document.getElementById('envBadge').textContent =
+      `${env.backend} · ${env.ux} · ${env.desktop || env.session_type}`;
+  }catch(e){ document.getElementById('envBadge').textContent = 'env unknown'; }
+  syncLabels();
+  if(!localStorage.getItem('ss_intro_dismissed')) $('banner').classList.add('show');
+  try{
+    const s = await invoke('get_settings');
+    $('backendSel').value = s.backend;
+    $('backendNote').textContent = BACKEND_NOTES[s.backend] || BACKEND_NOTES.auto;
+  }catch(e){ /* settings unavailable */ }
+  await loadDiag();
+  await loadPresets();
+  await loadLibrary();
+  try{
+    const sa = await invoke('startup_action');
+    if(sa){
+      if(sa.delay) await sleep(sa.delay * 1000);
+      await doCapture(sa.mode !== 'full');
+    }
+  }catch(e){ /* no startup action */ }
+})();
+</script>
+</body>
+</html>

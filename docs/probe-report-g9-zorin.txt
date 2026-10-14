@@ -1,0 +1,50 @@
+SCREENSNIPS — STEP 0 CAPABILITY PROBE
+Run: 2026-10-14 ~14:35 EDT, on richard-NucBoxG9 (GMKtec G9), Zorin OS 18.1,
+inside richard's live graphical session (env harvested from gnome-shell/systemd user env).
+=====================================
+Session type:      wayland
+Desktop:           zorin:GNOME
+Wayland display:   present
+X11 display:       present
+wlroots signals:   Hyprland=false Sway=false
+
+PORTAL
+  portal binary:        no (not on PATH; daemon is D-Bus-activated, backend definitions present)
+  backend definitions:  yes
+  Screenshot interface: yes
+  ScreenCast interface: yes
+  GlobalShortcuts:      no
+  Clipboard interface:  yes
+
+WAYLAND PROTOCOLS (via wayland-info, if available)
+  (could not query — wayland-info/weston-info not installed; mutter exposes no wlr protocols regardless)
+  ext-image-copy-capture: no
+  wlr-screencopy:         no
+  wlr-layer-shell:        no
+
+HELPER TOOLS ON PATH
+  grim         no
+  slurp        no
+  wf-recorder  no
+  spectacle    no
+  flameshot    no
+  tesseract    no
+  pipewire     yes
+  pw-cli       yes
+  wireplumber  yes
+  wl-copy      no
+  wl-paste     no
+  hyprctl      no
+  busctl       yes
+  gdbus        yes
+
+HARDWARE
+  CPU: Intel(R) N150 (4 threads)
+  RAM: 11.4 GB
+  Low-spec (Fast Render suggested): yes (by thread count)
+
+VERDICT
+  Capture backend: xdg-desktop-portal
+  Capture UX:      COMPOSITOR native picker (no custom loupe inside the portal picker)
+  Global hotkeys:  portal missing — fallback: map CLI capture commands in DE shortcut settings
+  OCR (Phase 2):   Tesseract missing — app must offer install

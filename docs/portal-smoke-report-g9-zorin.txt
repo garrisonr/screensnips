@@ -1,0 +1,23 @@
+SCREENSNIPS — STEP 0 LIVE PORTAL CAPTURE SMOKE TEST
+Run: 2026-10-14 ~14:49 EDT, on richard-NucBoxG9 (GMKtec G9), Zorin OS 18.1,
+inside richard's live GNOME/Wayland session. Authorized by Dickles ("go on the smoke test").
+
+Method: scripts/portal_smoke.py called org.freedesktop.portal.Screenshot.Screenshot
+with interactive=false and modal=false over the session D-Bus, waited for
+org.freedesktop.portal.Request.Response, and verified the returned file's
+metadata in-process (size + PNG IHDR dimensions). The image contents were NOT
+viewed, copied, or uploaded.
+
+Result: SUCCESS
+  request handle:   /org/freedesktop/portal/desktop/request/1_370/screensnips_smoke
+  portal response:  code 0 (success), ~3.5 s from call to response
+  returned URI:     file:///home/richard/Pictures/Screenshot.png
+  independent check: stat + file on the G9 confirm PNG image data,
+                     2560 x 1080, 8-bit/color RGBA, non-interlaced,
+                     1,339,414 bytes, modified 2026-10-14 14:49:04 -0400
+
+What this proves (Step 0 gate):
+- The Portal capture path works END TO END on the primary rig: request ->
+  compositor capture -> real PNG on disk, at full physical resolution
+  (2560x1080 ultrawide), with no picker interaction in non-interactive mode.
+- Remaining Step 0 item: Tauri frame-pipeline benchmark on the N150.
