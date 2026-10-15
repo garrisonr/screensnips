@@ -93,6 +93,18 @@ pub fn draw_text(img: &mut RgbaImage, x: f32, y: f32, height: f32, text: &str, c
     Some(max_width)
 }
 
+/// Average glyph advance of the loaded font, as a fraction of the em
+/// (glyph height), over a mixed-case English reference string. The
+/// document model's callout-box estimate is calibrated to this value
+/// (shot_model::CALLOUT_ADVANCE_EM); a shot-render test keeps the two
+/// in step so model/editor boxes track the renderer's measured boxes.
+pub fn avg_advance_em() -> Option<f32> {
+    const REF: &str = "The quick brown fox jumps over the lazy dog 0123456789";
+    let h = 1000.0;
+    let w = measure(REF, h)?;
+    Some(w / (h * REF.chars().count() as f32))
+}
+
 /// Pixel width of the widest line at the given glyph height, if a system
 /// font is available.
 pub fn measure(text: &str, height: f32) -> Option<f32> {

@@ -2942,6 +2942,7 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 name = "screensnips"
 version = "0.1.0"
 dependencies = [
+ "flate2",
  "image",
  "png 0.17.16",
  "serde",
@@ -3163,6 +3164,8 @@ checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
 name = "shot-capture"
 version = "0.1.0"
 dependencies = [
+ "async-io",
+ "futures-lite",
  "zbus",
  "zvariant",
 ]

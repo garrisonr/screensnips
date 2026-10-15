@@ -1,4 +1,5 @@
-//! xdg-desktop-portal Screenshot backend (zbus, blocking API).
+//! xdg-desktop-portal Screenshot backend (zbus; the async core is
+//! driven by `futures_lite::future::block_on` so callers stay sync).
 //!
 //! Flow: subscribe to the Request.Response signal for our predicted request
 //! path, call org.freedesktop.portal.Screenshot.Screenshot (non-interactive),
@@ -8,7 +9,6 @@
 
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::mpsc;
 use std::time::Duration;
 use zvariant::{OwnedObjectPath, OwnedValue, Value};
 
@@ -62,7 +62,22 @@ pub fn capture_full() -> Result<PathBuf> {
 /// instead of capturing blind. Dickles' call, 2026-10-14: interactive is
 /// the app's default; instant is the secondary fast path.
 pub fn capture_full_opts(interactive: bool) -> Result<PathBuf> {
-    let conn = zbus::blocking::Connection::session()
+    futures_lite::future::block_on(capture_async(interactive))
+}
+
+/// The capture itself, on the async zbus API (audit fix). The previous
+/// implementation spawned a thread that blocked forever on the blocking
+/// signal iterator: when the portal never answered, the caller timed
+/// out but the watcher thread stayed parked on the bus for the life of
+/// the process, leaking one thread + connection per failed capture.
+/// Here the signal wait is a future raced against the timeout on the
+/// CALLING thread — when the timer wins, everything (stream,
+/// connection) drops with the future and nothing outlives the call.
+async fn capture_async(interactive: bool) -> Result<PathBuf> {
+    use futures_lite::StreamExt;
+
+    let conn = zbus::Connection::session()
+        .await
         .map_err(|e| CaptureError::Session(e.to_string()))?;
     let unique = conn
         .unique_name()
@@ -73,64 +88,68 @@ pub fn capture_full_opts(interactive: bool) -> Result<PathBuf> {
 
     // Subscribe BEFORE the call (the ashpd pattern) so the response
     // can't race past us.
-    let request_proxy = zbus::blocking::Proxy::new(
+    let request_proxy = zbus::Proxy::new(
         &conn,
         PORTAL_DEST,
         req_path.as_str(),
         "org.freedesktop.portal.Request",
     )
+    .await
     .map_err(|e| CaptureError::Portal(e.to_string()))?;
-    let signals = request_proxy
+    let mut signals = request_proxy
         .receive_signal("Response")
+        .await
         .map_err(|e| CaptureError::Portal(e.to_string()))?;
 
-    let (tx, rx) = mpsc::channel::<Result<(u32, Option<String>)>>();
-    std::thread::spawn(move || {
-        for m in signals {
-            let parsed = m
-                .body()
-                .deserialize::<(u32, HashMap<String, OwnedValue>)>()
-                .map(|(code, results)| {
-                    let uri = results.get("uri").and_then(|v| match &**v {
-                        Value::Str(s) => Some(s.to_string()),
-                        _ => None,
-                    });
-                    (code, uri)
-                })
-                .map_err(|e| CaptureError::Portal(format!("bad Response body: {}", e)));
-            let _ = tx.send(parsed);
-            return;
-        }
-    });
-
-    let proxy = zbus::blocking::Proxy::new(
+    let proxy = zbus::Proxy::new(
         &conn,
         PORTAL_DEST,
         DESKTOP_PATH,
         "org.freedesktop.portal.Screenshot",
     )
+    .await
     .map_err(|e| CaptureError::Portal(e.to_string()))?;
 
     let mut options: HashMap<&str, Value> = HashMap::new();
-    options.insert("handle_token", Value::from(token.clone()));
+    options.insert("handle_token", Value::from(token));
     options.insert("modal", Value::from(false));
     options.insert("interactive", Value::from(interactive));
 
     let _handle: OwnedObjectPath = proxy
         .call("Screenshot", &("", options))
+        .await
         .map_err(|e| CaptureError::Portal(e.to_string()))?;
 
-    match rx.recv_timeout(TIMEOUT) {
-        Ok(Ok((0, Some(uri)))) => uri_to_path(&uri)
+    let msg = futures_lite::future::or(
+        async { signals.next().await },
+        async {
+            async_io::Timer::after(TIMEOUT).await;
+            None
+        },
+    )
+    .await;
+
+    let msg = match msg {
+        Some(m) => m,
+        None => return Err(CaptureError::Timeout),
+    };
+    let (code, uri) = msg
+        .body()
+        .deserialize::<(u32, HashMap<String, OwnedValue>)>()
+        .map(|(code, results)| {
+            let uri = results.get("uri").and_then(|v| match &**v {
+                Value::Str(s) => Some(s.to_string()),
+                _ => None,
+            });
+            (code, uri)
+        })
+        .map_err(|e| CaptureError::Portal(format!("bad Response body: {}", e)))?;
+    match (code, uri) {
+        (0, Some(uri)) => uri_to_path(&uri)
             .ok_or_else(|| CaptureError::Portal(format!("unparsable uri {}", uri))),
-        Ok(Ok((0, None))) => Err(CaptureError::Portal("response carried no uri".into())),
-        Ok(Ok((1, _))) => Err(CaptureError::Cancelled),
-        Ok(Ok((code, _))) => Err(CaptureError::Portal(format!("portal response code {}", code))),
-        Ok(Err(e)) => Err(e),
-        Err(mpsc::RecvTimeoutError::Timeout) => Err(CaptureError::Timeout),
-        Err(mpsc::RecvTimeoutError::Disconnected) => {
-            Err(CaptureError::Portal("response watcher died".into()))
-        }
+        (0, None) => Err(CaptureError::Portal("response carried no uri".into())),
+        (1, _) => Err(CaptureError::Cancelled),
+        (code, _) => Err(CaptureError::Portal(format!("portal response code {}", code))),
     }
 }
 

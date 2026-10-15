@@ -19,6 +19,9 @@ pub struct LibraryEntry {
     pub primitive_count: usize,
     /// False when a sidecar exists but failed to parse — surfaced, not hidden.
     pub sidecar_ok: bool,
+    /// OCR text stored in the sidecar, when the shot has been read.
+    /// Powers search-by-content in the library.
+    pub ocr_text: Option<String>,
 }
 
 impl LibraryEntry {
@@ -57,6 +60,7 @@ fn entry_for(shot: PathBuf) -> LibraryEntry {
                     modified_unix,
                     primitive_count: doc.primitives.len(),
                     sidecar_ok: true,
+                    ocr_text: doc.ocr_text,
                 },
                 Err(_) => LibraryEntry {
                     shot_path: shot,
@@ -66,6 +70,7 @@ fn entry_for(shot: PathBuf) -> LibraryEntry {
                     modified_unix,
                     primitive_count: 0,
                     sidecar_ok: false,
+                    ocr_text: None,
                 },
             },
             Err(_) => LibraryEntry {
@@ -76,6 +81,7 @@ fn entry_for(shot: PathBuf) -> LibraryEntry {
                 modified_unix,
                 primitive_count: 0,
                 sidecar_ok: false,
+                ocr_text: None,
             },
         }
     } else {
@@ -87,6 +93,7 @@ fn entry_for(shot: PathBuf) -> LibraryEntry {
             modified_unix,
             primitive_count: 0,
             sidecar_ok: true,
+            ocr_text: None,
         }
     }
 }

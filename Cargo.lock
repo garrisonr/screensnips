@@ -572,6 +572,8 @@ dependencies = [
 name = "shot-capture"
 version = "0.1.0"
 dependencies = [
+ "async-io",
+ "futures-lite",
  "zbus",
  "zvariant",
 ]

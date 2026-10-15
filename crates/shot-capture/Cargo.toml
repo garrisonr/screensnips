@@ -8,3 +8,5 @@ description = "Screensnips capture backends: environment detection (portal / wlr
 [dependencies]
 zbus = "5"
 zvariant = "5"
+futures-lite = "2"
+async-io = "2"

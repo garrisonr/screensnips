@@ -117,8 +117,14 @@ mod tests {
     #[test]
     fn detect_never_panics() {
         let d = detect();
-        // In CI/sandbox there is usually no session: None is the honest answer.
-        if d.session_type.is_empty() {
+        // In CI/sandbox there is usually no session: None is the honest
+        // answer. But "no session" has to mean it: on a live desktop
+        // the session bus answers via /run/user/<uid>/bus even with a
+        // scrubbed environment, and Portal is the CORRECT detection
+        // there — demanding None in that case failed this test on the
+        // dogfood box while detect() was right. Only require None when
+        // no portal interface answered either.
+        if d.session_type.is_empty() && !d.portal_screenshot && !d.portal_screencast {
             assert_eq!(d.kind, BackendKind::None);
         }
     }

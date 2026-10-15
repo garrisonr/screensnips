@@ -60,6 +60,99 @@ fn point_in_triangle(px: f32, py: f32, a: (f32, f32), b: (f32, f32), c: (f32, f3
 }
 
 /// Arrow: shaft + filled triangular head at `to`.
+/// Highlighter pen (Dickles' law: a pen, not a box): a wide,
+/// translucent stroke along `pts` that multiply-tints what it
+/// crosses — dark pixels (text) stay dark, light pixels take the
+/// ink, exactly like a marker on paper. One pass over the stroke's
+/// bbox: coverage is the pixel's distance to the path (full inside
+/// the nib, feathered across its outer quarter), so a slow stroke
+/// that overlaps itself never double-darkens.
+pub fn highlight_stroke(img: &mut RgbaImage, pts: &[(f32, f32)], width: f32, color: Color) {
+    if pts.is_empty() || width <= 0.0 {
+        return;
+    }
+    let half = width / 2.0;
+    let (mut minx, mut miny) = (f32::MAX, f32::MAX);
+    let (mut maxx, mut maxy) = (f32::MIN, f32::MIN);
+    for &(x, y) in pts {
+        minx = minx.min(x);
+        miny = miny.min(y);
+        maxx = maxx.max(x);
+        maxy = maxy.max(y);
+    }
+    let x0 = (minx - half - 1.0).floor() as i32;
+    let x1 = (maxx + half + 1.0).ceil() as i32;
+    let y0 = (miny - half - 1.0).floor() as i32;
+    let y1 = (maxy + half + 1.0).ceil() as i32;
+    // Ink strength: the pen lays down a bit more than half its color.
+    let strength = (color.a as f32 / 255.0) * 0.55;
+    if strength <= 0.0 {
+        return;
+    }
+    for y in y0..=y1 {
+        for x in x0..=x1 {
+            if !img.in_bounds(x, y) {
+                continue;
+            }
+            let (px, py) = (x as f32 + 0.5, y as f32 + 0.5);
+            let mut dmin = f32::MAX;
+            if pts.len() == 1 {
+                dmin = ((px - pts[0].0).powi(2) + (py - pts[0].1).powi(2)).sqrt();
+            }
+            for pair in pts.windows(2) {
+                let (ax, ay) = pair[0];
+                let (bx, by) = pair[1];
+                if px < ax.min(bx) - half || px > ax.max(bx) + half {
+                    continue;
+                }
+                if py < ay.min(by) - half || py > ay.max(by) + half {
+                    continue;
+                }
+                let (dx, dy) = (bx - ax, by - ay);
+                let len2 = dx * dx + dy * dy;
+                let t = if len2 == 0.0 {
+                    0.0
+                } else {
+                    (((px - ax) * dx + (py - ay) * dy) / len2).clamp(0.0, 1.0)
+                };
+                let (cx, cy) = (ax + t * dx, ay + t * dy);
+                let d = ((px - cx).powi(2) + (py - cy).powi(2)).sqrt();
+                if d < dmin {
+                    dmin = d;
+                }
+            }
+            if dmin > half {
+                continue;
+            }
+            let feather = half * 0.75;
+            let cov = if dmin <= feather {
+                1.0
+            } else {
+                (half - dmin) / (half - feather)
+            };
+            let a = strength * cov;
+            let base = img.get(x as u32, y as u32);
+            // Multiply blend: channel' = base × ink / 255, mixed by a.
+            let mix = |b: u8, ink: u8| -> u8 {
+                let tinted = b as f32 * ink as f32 / 255.0;
+                (b as f32 * (1.0 - a) + tinted * a)
+                    .round()
+                    .clamp(0.0, 255.0) as u8
+            };
+            img.set(
+                x as u32,
+                y as u32,
+                Color::rgba(
+                    mix(base.r, color.r),
+                    mix(base.g, color.g),
+                    mix(base.b, color.b),
+                    base.a,
+                ),
+            );
+        }
+    }
+}
+
 pub fn arrow(img: &mut RgbaImage, x0: f32, y0: f32, x1: f32, y1: f32, width: f32, color: Color) {
     let (dx, dy) = (x1 - x0, y1 - y0);
     let len = (dx * dx + dy * dy).sqrt();
@@ -73,6 +166,67 @@ pub fn arrow(img: &mut RgbaImage, x0: f32, y0: f32, x1: f32, y1: f32, width: f32
     let (pxn, pyn) = (-uy, ux);
     // shaft stops at the head base
     line(img, x0, y0, bx, by, width, color);
+    let a = (x1, y1);
+    let b = (bx + pxn * head_half, by + pyn * head_half);
+    let c = (bx - pxn * head_half, by - pyn * head_half);
+    let minx = (a.0.min(b.0).min(c.0) - 1.0).floor() as i32;
+    let maxx = (a.0.max(b.0).max(c.0) + 1.0).ceil() as i32;
+    let miny = (a.1.min(b.1).min(c.1) - 1.0).floor() as i32;
+    let maxy = (a.1.max(b.1).max(c.1) + 1.0).ceil() as i32;
+    for y in miny..=maxy {
+        for x in minx..=maxx {
+            if point_in_triangle(x as f32 + 0.5, y as f32 + 0.5, a, b, c) {
+                blend_px(img, x, y, color);
+            }
+        }
+    }
+}
+
+/// Curved arrow: a quadratic Bézier shaft from (x0,y0) through control
+/// (cx,cy) to the tip (x1,y1), with a filled triangular head oriented
+/// along the curve's end tangent (tip − control direction).
+pub fn arrow_curved(
+    img: &mut RgbaImage,
+    x0: f32,
+    y0: f32,
+    cx: f32,
+    cy: f32,
+    x1: f32,
+    y1: f32,
+    width: f32,
+    color: Color,
+) {
+    let (dx, dy) = (x1 - cx, y1 - cy);
+    let tlen = (dx * dx + dy * dy).sqrt();
+    if tlen < 1.0 {
+        return;
+    }
+    let (ux, uy) = (dx / tlen, dy / tlen);
+    let head_len = (width * 4.5).min(tlen * 0.6).max(width * 2.5);
+    let head_half = head_len * 0.42;
+    let (bx, by) = (x1 - ux * head_len, y1 - uy * head_len);
+    // Shaft: sample the curve, stopping where the head begins
+    // (approximately t where the point reaches the head base).
+    let steps = 28;
+    let mut prev: Option<(f32, f32)> = None;
+    for i in 0..=steps {
+        let t = i as f32 / steps as f32;
+        let mt = 1.0 - t;
+        let (px, py) = (
+            mt * mt * x0 + 2.0 * mt * t * cx + t * t * x1,
+            mt * mt * y0 + 2.0 * mt * t * cy + t * t * y1,
+        );
+        // stop the shaft at the head base: once within head_len of the
+        // tip along the tangent, further points hide under the head.
+        let along = (px - bx) * ux + (py - by) * uy;
+        if let Some(q) = prev {
+            if along <= 0.0 {
+                line(img, q.0, q.1, px, py, width, color);
+            }
+        }
+        prev = Some((px, py));
+    }
+    let (pxn, pyn) = (-uy, ux);
     let a = (x1, y1);
     let b = (bx + pxn * head_half, by + pyn * head_half);
     let c = (bx - pxn * head_half, by - pyn * head_half);

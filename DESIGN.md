@@ -93,3 +93,33 @@ Report a Bug + Request a Feature entries (GitHub issues, diagnostics attached
 where gatherable), icon family check, reduced-motion pass, and the full
 capture → annotate → beautify → copy/save QA workflow on the QA matrix
 (GNOME/portal first — the G9 — then KDE Plasma 6, then Hyprland/wlroots).
+
+
+## Post-capture decision point (Dickles, dogfood ruling 2026-10-14)
+
+The instant after a capture, the editor is a busy place — and the single most important question gets lost in it. Law: **the moment a shot lands, the visual hierarchy collapses to one question — "Nice shot. Now what?" — with exactly three terminal actions: Copy / Save PNG / Discard.** Those controls are LARGE and unmissable (primary-size targets, presented as a prominent centered/floating action bar with the canvas dimmed behind them), not a small toast competing with toolbars. The "Local only. No account, no cloud" line stays as a quiet caption beneath — reassurance, not headline. Annotation chrome remains visually subordinate until the user reaches for the canvas or a tool; the decision comes first, the editor second. A first-time user should never have to hunt for what happens next.
+
+
+## Color swatch row integrity (Dickles, dogfood defect 2026-10-14 — repeat offense)
+
+The ink-color row has been flagged more than once ("colors are still fucked up"). Law for swatch rows: every swatch lives in an IDENTICAL box on one shared baseline with even spacing; circles are optically the same size; the selection ring is drawn OUTSIDE the layout box (outline/offset) so selecting a color never shifts the row; the custom color-wheel swatch aligns to the same box and baseline as the flat colors. If a screenshot at arm's length shows any wobble in the row, it fails QA — check at 1x on the ultrawide before shipping editor UI changes.
+
+
+## Tool hints are universal and prominent (Dickles, dogfood ruling 2026-10-14)
+
+Some markup tools show an on-screen usage hint; some don't. Law: **every annotation tool carries a hint, no exceptions** — the moment a tool is selected, its hint appears in one consistent place (a dedicated hint bar, never scattered ad-hoc tooltips), stating the gesture, the useful modifiers, and how to finish or cancel (e.g. "Drag to draw · Shift locks the angle · Enter commits · Esc cancels"). Prominence is part of the rule: hints are set at a legible size and contrast — readable at arm's length on the ultrawide, not 11px grey whisper text. A tool whose use isn't obvious from its hint fails QA. When a new tool ships, its hint ships in the same change or the tool doesn't ship.
+
+
+## Highlight is a PEN, not a box (Dickles, dogfood defect 2026-10-14)
+
+The Highlight tool currently produces some kind of box, and whatever it's doing, it isn't highlighting. Law: Highlight = a **highlighter pen** — a wide, translucent freehand stroke that follows the pointer and tints what it passes over (multiply-style blend, ink color at reduced opacity), exactly like dragging a physical highlighter across text. It is NOT a rectangle, NOT a filled box, NOT a selection region. Stroke width follows the pen-size setting; edges may be slightly soft. QA test: highlight one line of text in a shot — the text must stay readable through a translucent wash of color laid along the stroke path, including curves.
+
+
+## Blur must BLUR — and every primitive must do what its name says (Dickles, dogfood defect 2026-10-14)
+
+The Blur region tool "doesn't seem to blur either." Law: Blur applies a real, strong gaussian blur over the dragged region — privacy-grade, meaning text under it is illegible, not softened. A token pass that leaves content readable is a broken tool wearing a working tool's name. This generalizes (same sitting produced the highlighter-box defect): **every annotation primitive's rendered effect must visibly match its plain-language name** — Blur blurs, Pixelate pixelates, Highlight highlights with a pen. QA for any render change: apply each primitive to a screenshot containing text and confirm, by eye, that the effect is the one the label promises at full strength.
+
+
+## Import is a first-class input (Dickles, order 2026-10-14)
+
+Screensnips is not capture-only. **Any single image file opens in Screensnips** — a phone photo, a copier scan, a downloaded picture — via an obvious in-app Open, drag-and-drop, a CLI path argument, and the OS "Open With" menu (image MIME types registered). Imported images become full projects: the align/straighten tools (built for documents) work on them, along with crop, annotate, beautify, and export; saving files them in the library like native captures, and the original file is never modified. The straighten path exists precisely for the phone-photo-of-a-document case — skewed input in, squared document out.

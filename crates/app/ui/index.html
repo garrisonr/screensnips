@@ -27,7 +27,47 @@
   .lib-name{font-size:.7rem;color:var(--ink);word-break:break-all;margin-top:.35rem}
   .lib-meta{font-size:.68rem;color:var(--muted);margin-top:.15rem}
   .lib-empty{font-size:.75rem;color:var(--muted);line-height:1.45}
-  #stage{overflow:auto;padding:1rem;display:flex;flex-direction:column;gap:.5rem;align-items:flex-start}
+  .panel{border-top:1px solid rgba(255,255,255,.09);padding:.3rem 0 .75rem;margin-top:.35rem}
+  .panel>summary{font-size:.8rem;text-transform:uppercase;letter-spacing:.09em;color:var(--ink);cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;min-height:2.3rem;font-weight:600;-webkit-user-select:none;user-select:none}
+  .panel>summary::-webkit-details-marker{display:none}
+  .panel>summary::after{content:'▾';color:var(--muted);transition:transform .18s ease}
+  .panel:not([open])>summary::after{transform:rotate(-90deg)}
+  .subh{font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:.85rem 0 .3rem;font-weight:600}
+  @media (prefers-reduced-motion: reduce){ .panel>summary::after{transition:none} }
+  #wizard{position:fixed;inset:0;background:rgba(5,8,14,.66);display:flex;align-items:center;justify-content:center;z-index:60}
+  #wizard[hidden]{display:none}
+  .wiz-panel{background:#141a26;border:1px solid var(--border);border-radius:16px;width:min(760px,94vw);max-height:86vh;display:flex;flex-direction:column;padding:1rem}
+  .wiz-head{display:flex;align-items:center;gap:.8rem;margin-bottom:.6rem}
+  .wiz-head strong{font-size:1rem}
+  .wiz-head button{margin-left:auto}
+  #wizBody{overflow-y:auto;display:flex;flex-direction:column;gap:.8rem;padding-right:.2rem}
+  .wiz-group{border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:.6rem .7rem}
+  .wiz-group h4{margin:.1rem 0 .4rem;font-size:.84rem;color:var(--ink)}
+  .wiz-item{display:flex;gap:.6rem;align-items:center;padding:.25rem 0}
+  .wiz-item canvas{width:118px;height:auto;border-radius:6px;flex:none;background:#0d1119}
+  .wiz-item .grow{flex:1;min-width:0}
+  .wiz-foot{display:flex;align-items:center;gap:.6rem;margin-top:.8rem}
+  .wiz-foot #wizCount{margin-right:auto;color:var(--muted);font-size:.8rem}
+  #ctxmenu{position:fixed;z-index:70;background:#1c2434;border:1px solid var(--border);border-radius:10px;padding:.3rem;min-width:180px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+  #ctxmenu[hidden]{display:none}
+  #ctxmenu button{display:flex;width:100%;text-align:left;background:transparent;border:none;color:var(--ink);height:2.1rem;padding:0 .6rem;border-radius:7px;cursor:pointer;font-size:.84rem;align-items:center}
+  #ctxmenu button:hover{background:rgba(111,211,255,.14)}
+  #ctxmenu button.danger{color:#ff8fa0}
+  #libSearch{width:100%;height:2rem;border-radius:9px;background:#1b222f;border:1px solid var(--border);color:var(--ink);padding:0 .6rem;margin-bottom:.45rem;font-size:.82rem}
+  .lib-day{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:.7rem 0 .4rem}
+  .lib-day:first-child{margin-top:.2rem}
+  .lib-badge{display:inline-block;margin-left:.35rem;padding:.05rem .4rem;border-radius:999px;background:rgba(111,211,255,.16);color:var(--accent);font-size:.64rem;cursor:pointer;border:1px solid rgba(111,211,255,.35)}
+  .swatch.colorpick{position:relative;overflow:hidden;display:block;border-radius:50%;background:conic-gradient(#ff5147,#ffd479,#7ee2a8,#6fd3ff,#7a7aff,#ff8ad8,#ff5147);border:2px solid rgba(255,255,255,.35)}
+  .swatch.colorpick input{position:absolute;inset:-6px;opacity:0;cursor:pointer;width:200%;height:200%}
+  .cur-chip{box-sizing:border-box;display:block;width:1.7rem;height:1.7rem;border-radius:50%;border:2px solid rgba(255,255,255,.35);flex:none}
+  .lib-io{display:flex;gap:.4rem;margin:.15rem 0 .45rem}
+  .lib-io button{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.74rem;padding:.38rem .2rem}
+  #importRow{margin-bottom:.45rem}
+  #importRow input{width:100%;height:2rem;border-radius:9px;background:#1b222f;border:1px solid var(--border);color:var(--ink);padding:0 .6rem;font-size:.78rem;margin-bottom:.35rem}
+  #importRow button{width:100%;font-size:.78rem}
+  #loupe{position:absolute;border-radius:50%;border:2px solid var(--accent);box-shadow:0 10px 32px rgba(0,0,0,.55);pointer-events:none;z-index:30;background:#0d0f13}
+  .cur-hex{font-size:.72rem;color:var(--muted);font-family:ui-monospace,monospace;margin-left:.35rem}
+  #stage{position:relative;overflow:auto;padding:1rem;display:flex;flex-direction:column;gap:.5rem;align-items:flex-start}
   #canvasWrap{position:relative;line-height:0}
   canvas{max-width:100%}
   #overlay{position:absolute;left:0;top:0}
@@ -35,6 +75,19 @@
   aside h2{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:1rem 0 .5rem}
   aside h2:first-child{margin-top:0}
   .tools{display:flex;flex-wrap:wrap;gap:.4rem}
+  .tools{display:grid;grid-template-columns:repeat(5,1fr);gap:.45rem}
+  .tools button{height:2.9rem;border-radius:12px;display:flex;align-items:center;justify-content:center;padding:0}
+  .tools button svg{width:1.35rem;height:1.35rem;flex:0 0 auto}
+  .tools button.active{background:rgba(111,211,255,.18);outline:2px solid var(--accent)}
+  .editbar{display:flex;gap:.45rem}
+  .editbar button{flex:1;display:flex;gap:.4rem;align-items:center;justify-content:center;font-weight:500}
+  .editbar button svg{width:1.05rem;height:1.05rem}
+  .editbar button:disabled{opacity:.38;cursor:default}
+  button.danger{color:var(--danger);border-color:rgba(255,107,129,.55)}
+  .stampbar button{width:2.6rem;height:2.6rem;border-radius:12px;display:flex;align-items:center;justify-content:center;padding:0}
+  .stampbar button svg{width:1.3rem;height:1.3rem}
+  .stampbar button.active{background:rgba(111,211,255,.18);outline:2px solid var(--accent)}
+  body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
   label{display:block;font-size:.8rem;color:var(--muted);margin:.5rem 0 .2rem}
   input[type=range]{width:100%}
   select{width:100%;height:2rem;border-radius:9px;background:#232b3a;color:var(--ink);border:1px solid var(--border);padding:0 .5rem}
@@ -45,16 +98,47 @@
   .dropdown-menu button:hover{background:rgba(111,211,255,.16)}
   .dropdown-menu button.active{color:var(--accent);font-weight:600}
   .dropdown-menu button.active::before{content:"✓ "}
+  .dropdown-menu .menu-sep{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:.5rem .6rem .2rem;border-top:1px solid var(--border);margin-top:.3rem}
+  .dropdown-menu{max-height:60vh;overflow-y:auto}
   #preview{width:100%;border:1px solid var(--border);border-radius:12px;background:#0d0f13}
   #status{font-size:.8rem;color:var(--muted);padding:.3rem 0}
   .privacy{font-size:.75rem;color:var(--muted);border:1px dashed var(--border);border-radius:12px;padding:.5rem .6rem}
-  .swatches{display:flex;gap:.4rem;margin:.4rem 0}
-  .swatch{width:1.7rem;height:1.7rem;border-radius:50%;padding:0;border:2px solid rgba(255,255,255,.35)}
+  .swatches{display:flex;gap:.45rem;margin:.4rem 0;flex-wrap:wrap;align-items:center}
+  .swatches .swatch{flex:none}
+  /* Swatch-row integrity (Dickles' law): every circle in this row —
+     color buttons, the color-wheel label, the current-color chip —
+     gets the IDENTICAL border-box geometry on one baseline. Mixed
+     box models (button vs label vs inline-block span) made the row
+     wobble by a few px per element; never again. The selection ring
+     is an outline: it paints outside the layout box and can never
+     shift the row. */
+  .swatch{box-sizing:border-box;display:block;width:1.7rem;height:1.7rem;border-radius:50%;padding:0;margin:0;border:2px solid rgba(255,255,255,.35);line-height:0;font-size:0;appearance:none;-webkit-appearance:none;cursor:pointer}
   .swatch.active{outline:2px solid var(--accent);outline-offset:2px}
   .stampbar{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.4rem}
   .stampbar button{font-size:1rem;padding:0 .6rem}
-  #quickbar{display:none;gap:.5rem;align-items:center}
+  /* Post-capture decision point (Dickles' law): the moment after a
+     capture the whole hierarchy collapses to three LARGE choices
+     floating over a dimmed canvas. Impossible to miss, nothing else
+     competing. "Local only" lives on as the quiet caption beneath. */
+  #quickScrim{display:none;position:absolute;inset:0;z-index:74;background:rgba(6,8,12,.5)}
+  #quickScrim.show{display:block}
+  #quickbar{display:none;position:absolute;left:50%;top:36%;transform:translate(-50%,-50%);z-index:75;flex-direction:column;gap:.75rem;align-items:center;text-align:center;background:rgba(22,28,40,.97);border:1px solid var(--border);border-radius:18px;padding:1.35rem 1.7rem 1.05rem;box-shadow:0 24px 60px rgba(0,0,0,.6);min-width:24rem;max-width:92%}
+  #quickbar .q-title{font-size:1.3rem;font-weight:700;letter-spacing:-.01em}
+  #quickbar .q-actions{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
+  #quickbar .q-actions button{height:2.9rem;padding:0 1.6rem;font-size:1.02rem;font-weight:600;border-radius:999px}
+  #quickbar .q-cap{font-size:.76rem;color:var(--muted)}
+  /* Universal tool hint bar (Dickles' law): every markup tool states
+     its gesture, modifiers, and commit/cancel in ONE consistent,
+     legible place. A tool without a hint does not ship. */
+  #toolHint{align-self:stretch;font-size:.95rem;line-height:1.4;color:var(--ink);background:rgba(111,211,255,.09);border:1px solid rgba(111,211,255,.32);border-left:4px solid var(--accent);border-radius:10px;padding:.55rem .8rem}
+  #toolHint b{color:var(--accent)}
+  #dropHint{display:none;position:absolute;inset:0;z-index:80;background:rgba(10,14,22,.72);backdrop-filter:blur(3px);align-items:center;justify-content:center;pointer-events:none}
+  body.dragging #dropHint{display:flex}
+  #dropHint .drop-card{border:2px dashed var(--accent);border-radius:18px;padding:2.2rem 3rem;font-size:1.35rem;font-weight:650;color:var(--ink);text-align:center;background:rgba(26,32,44,.85)}
+  #dropHint .drop-card span{display:block;margin-top:.5rem;font-size:.95rem;font-weight:400;color:var(--muted)}
   #quickbar.show{display:flex}
+  #docbar{display:none;gap:.5rem;align-items:center;flex-wrap:wrap}
+  #docbar.show{display:flex}
   #banner{display:none;border:1px solid var(--accent);border-radius:12px;padding:.55rem .7rem;font-size:.8rem;background:rgba(111,211,255,.08)}
   #banner.show{display:block}
   details.diag{border:1px solid var(--border);border-radius:12px;padding:.5rem .6rem;font-size:.75rem}
@@ -78,6 +162,7 @@
     nav#library{grid-column:1 / -1;order:3;border-right:none;border-top:1px solid var(--border);max-height:220px}
     nav#library #libList{display:flex;gap:.55rem;overflow-x:auto;padding-bottom:.3rem}
     nav#library .lib-entry{flex:0 0 180px;margin-bottom:0}
+    nav#library .lib-day{flex:0 0 auto;margin:0 .2rem;align-self:center}
     aside{grid-row:1}
     #stage{grid-row:1}
   }
@@ -93,12 +178,12 @@
     header h1{font-size:.95rem}
     .badge{display:none}
     header button{padding:0 .6rem}
-    #delaySel{max-width:7.5rem}
+    #delayDropdown{min-width:8.5rem}
   }
   /* Coarse pointers (touch, TV remotes with air-mouse): 44px+ targets */
   @media (pointer:coarse){
     button{height:2.75rem}
-    .swatch{width:2.5rem;height:2.5rem}
+    .swatch,.cur-chip{width:2.5rem;height:2.5rem}
     .dropdown-menu button{height:2.75rem}
     nav#library h2 button{height:2rem}
   }
@@ -112,64 +197,99 @@
   <h1>Screensnips</h1>
   <span class="badge" id="envBadge">detecting…</span>
   <span style="flex:1"></span>
-  <select id="delaySel" class="inline" title="Wait before capturing — time to arrange windows">
-    <option value="0">No delay</option>
-    <option value="3">3s delay</option>
-    <option value="5">5s delay</option>
-    <option value="10">10s delay</option>
-  </select>
+  <div class="dropdown" id="delayDropdown">
+    <button type="button" id="delayButton" class="dropdown-btn" title="Delay = menu grab: count down, then capture the whole screen with NO picker — the only way to catch open menus and popups, which a picker would dismiss"><span id="delayLabel">No delay</span><span>▾</span></button>
+    <div class="dropdown-menu" id="delayMenu" hidden>
+      <button type="button" data-val="0" class="active">No delay</button>
+      <button type="button" data-val="3">3s — menu grab</button>
+      <button type="button" data-val="5">5s — menu grab</button>
+      <button type="button" data-val="10">10s — menu grab</button>
+    </div>
+  </div>
   <button id="btnCapture" class="primary">Capture</button>
   <button id="btnInstant" title="Grab the full screen immediately, no picker">⚡ Instant</button>
+  <button id="btnOpen" title="Open any image — a phone photo, a scan — and crop, straighten, annotate and beautify it here. You can also drag an image onto the window.">📂 Open…</button>
   <button id="btnCopy">Copy</button>
   <button id="btnExport">Export PNG</button>
 </header>
 <main>
   <nav id="library">
-    <h2>Library <button id="btnLibRefresh" title="Rescan the library folder">↻</button></h2>
+    <h2>Library <button id="btnLibRefresh" title="Rescan the library folder">↻</button> <button id="btnWizard" title="Cleanup wizard — find duplicates and dud shots">🧹</button></h2>
+    <input type="text" id="libSearch" placeholder="Search names and text in shots…" autocomplete="off">
+    <div id="libCount" class="lib-meta"></div>
+    <div class="lib-io">
+      <button id="btnExportLib" title="Bundle the whole library into one .zip in Downloads">⬇ Export</button>
+      <button id="btnImportLib" title="Bring shots in from a .zip">⬆ Import</button>
+    </div>
+    <div id="importRow" hidden>
+      <input type="text" id="importPath" placeholder="Path to a .zip — e.g. /home/you/Downloads/screensnips-library-….zip" autocomplete="off">
+      <button id="btnImportGo">Import this .zip</button>
+    </div>
     <div id="libList"><div class="lib-empty">Nothing yet. Export a shot and it lives here — reopen any entry to keep editing it.</div></div>
   </nav>
   <section id="stage">
-    <div class="privacy">Local only. No account, no cloud — captures and edits never leave this machine.</div>
     <div id="banner">Your shots live in <b>~/Pictures/Screensnips</b> — every export saves the picture, the original shot, and an annotations file, so the library on the left can reopen any shot with its annotations still editable. <button id="btnBannerOk">Got it</button></div>
+    <div id="dropHint"><div class="drop-card">📂 Drop the image — Screensnips will open it<span>Your original file is never modified; a copy joins the library.</span></div></div>
+    <div id="quickScrim"></div>
     <div id="quickbar">
-      <span style="font-size:.85rem">Nice shot. Now what?</span>
-      <button id="btnQCopy" class="primary">Copy</button>
-      <button id="btnQSave">Save PNG</button>
-      <button id="btnQDiscard">Discard</button>
+      <div class="q-title">Nice shot. Now what?</div>
+      <div class="q-actions">
+        <button id="btnQCopy" class="primary">Copy</button>
+        <button id="btnQSave">Save PNG</button>
+        <button id="btnQDiscard">Discard</button>
+      </div>
+      <div class="q-cap">Local only. No account, no cloud — captures and edits never leave this machine.</div>
     </div>
+    <div id="docbar">
+      <span style="font-size:.85rem">Document framed — straighten as:</span>
+      <button id="btnDocAuto" class="primary">Auto shape</button>
+      <button id="btnDocId">ID card</button>
+      <button id="btnDocPassport">Passport</button>
+      <button id="btnDocCancel">Cancel</button>
+    </div>
+    <div id="toolHint"></div>
     <div id="canvasWrap">
       <canvas id="editCanvas" width="960" height="540"></canvas>
       <canvas id="overlay" width="960" height="540"></canvas>
+      <canvas id="loupe" width="176" height="176" hidden></canvas>
     </div>
-    <div id="status">Capture opens the system picker so you frame the shot first (area, window, or screen). ⚡ Instant grabs the whole screen immediately.</div>
+    <div id="status">Capture opens the system picker so you frame the shot first (area, window, or screen). ⚡ Instant grabs the whole screen immediately. 📂 Open brings in any image — a phone photo, a scan — or just drag one onto the window.</div>
   </section>
   <aside>
-    <h2>Tools</h2>
+    <details class="panel" id="panel-markup" open>
+    <summary>Markup</summary>
     <div class="tools" id="tools">
-      <button data-tool="arrow" class="active">Arrow</button>
-      <button data-tool="line">Line</button>
-      <button data-tool="pen">✎ Pen</button>
-      <button data-tool="rect">Rect</button>
-      <button data-tool="ellipse">Ellipse</button>
-      <button data-tool="highlight">Highlight</button>
-      <button data-tool="step">Step ●</button>
-      <button data-tool="text">Text</button>
-      <button data-tool="callout">💬 Callout</button>
-      <button data-tool="spotlight">🔦 Spotlight</button>
-      <button data-tool="blur">Blur</button>
-      <button data-tool="pixelate">Pixelate</button>
-      <button data-tool="select">Select / Move</button>
-      <button data-tool="crop">✂ Crop</button>
-      <button id="btnDelete">Delete selected</button>
-      <button id="btnUndo" disabled>↩ Undo</button>
-      <button id="btnRedo" disabled>↪ Redo</button>
+      <button data-tool="arrow" class="active" title="Arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 L18 6"/><path d="M9.5 6 H18 V14.5"/></svg></button>
+      <button data-tool="line" title="Line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 19 L19 5"/></svg></button>
+      <button data-tool="pen" title="Pen — freehand draw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 17c2.5-8.5 4.5-8.5 6.5-3.5 1.7 4.2 3.2 4.6 5 .8 1.6-3.4 3.4-4 6-3.3"/></svg></button>
+      <button data-tool="rect" title="Rectangle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="6" width="16" height="12" rx="1.5"/></svg></button>
+      <button data-tool="ellipse" title="Ellipse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="12" rx="8.5" ry="6"/></svg></button>
+      <button data-tool="highlight" title="Highlight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l5 5L11 18H6v-5l8.5-8.5z"/><path d="M4 21h16"/></svg></button>
+      <button data-tool="step" title="Step number"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M10.3 9.6 L12.4 8.2 V16"/></svg></button>
+      <button data-tool="text" title="Text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6.2 V4.5 h14 v1.7"/><path d="M12 4.5 V19"/><path d="M9 19 h6"/></svg></button>
+      <button data-tool="callout" title="Callout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5.5h16V15h-7.5L8 19v-4H4z"/></svg></button>
+      <button data-tool="spotlight" title="Spotlight — dim everything else"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 9.5 V5.5 A1.5 1.5 0 0 1 5.5 4 H9.5"/><path d="M14.5 4 H18.5 A1.5 1.5 0 0 1 20 5.5 V9.5"/><path d="M20 14.5 V18.5 A1.5 1.5 0 0 1 18.5 20 H14.5"/><path d="M9.5 20 H5.5 A1.5 1.5 0 0 1 4 18.5 V14.5"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <button data-tool="blur" title="Blur region"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="2" stroke-dasharray="3.5 3"/><rect x="8" y="9" width="8" height="6" rx="1" fill="currentColor" opacity="0.3" stroke="none"/></svg></button>
+      <button data-tool="pixelate" title="Pixelate region"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" fill="currentColor"/><rect x="13" y="4" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="4" y="13" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="13" width="7" height="7" fill="currentColor"/></svg></button>
+      <button data-tool="select" title="Select / Move"><svg viewBox="0 0 24 24"><path d="M6.2 3.6 L19 11.8 l-7.3 1.3 3.4 6.9 -2.7 1.3 -3.4-6.8 -2.8 3.5 z" fill="currentColor"/></svg></button>
+      <button data-tool="crop" title="Crop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 3v13.5A1.5 1.5 0 0 0 8.5 18 H21"/><path d="M3 7h13.5A1.5 1.5 0 0 1 18 8.5 V21"/><path d="M3 12.5h4M12.5 3v4" opacity="0.001"/></svg></button>
+      <button data-tool="eyedropper" title="Eyedropper — click the shot to steal its color"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16.9 3.4a2 2 0 0 1 2.8 2.8L11.2 14.7 7.6 15.7 8.6 12.1z"/><path d="M14.2 6.1l3.5 3.5"/><path d="M5.4 15.6c-1.2 1.6-1.9 2.8-1.9 3.8a2 2 0 0 0 4 0c0-1-.7-2.2-2.1-3.8z"/></svg></button>
+      <button data-tool="document" title="Document — smart autocrop + straighten a photographed ID or page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M6 16.5c.6-1.4 1.4-2 2.5-2s1.9.6 2.5 2"/><path d="M14.5 9.5h4M14.5 13h4"/></svg></button>
     </div>
+    <label>Stamps</label>
     <div class="stampbar" id="stamps" title="Stamps — Snagit's clip art, drawn fresh every time">
-      <button data-stamp="check" title="Check">✓</button>
-      <button data-stamp="cross" title="Cross">✕</button>
-      <button data-stamp="star" title="Star">★</button>
-      <button data-stamp="warning" title="Warning">⚠</button>
-      <button data-stamp="arrow_up" title="Arrow up">⬆</button>
+      <button data-stamp="check" title="Check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.8 l5 5 L19.5 6.8"/></svg></button>
+      <button data-stamp="cross" title="Cross"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6 l12 12"/><path d="M18 6 L6 18"/></svg></button>
+      <button data-stamp="star" title="Star"><svg viewBox="0 0 24 24"><path d="M12 3.8l2.5 5.4 5.9.6-4.4 4 1.2 5.8L12 16.7l-5.2 2.9L8 13.8 3.6 9.8l5.9-.6z" fill="currentColor"/></svg></button>
+      <button data-stamp="warning" title="Warning"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 L21.2 20 H2.8 z"/><path d="M12 10 v4.6"/><path d="M12 17.4 v.4"/></svg></button>
+      <button data-stamp="arrow_up" title="Arrow up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5 V5"/><path d="M5.5 11.5 L12 5 l6.5 6.5"/></svg></button>
+      <button data-stamp="datetime" title="Date stamp — the film-processing imprint, in classic orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M3.5 10h17"/><path d="M8 3.5v4M16 3.5v4"/><path d="M7.5 14.2 l1.6 2.6 1.6-2.6M12.8 13.8v3.4M12.8 15.5h2.4" stroke-width="1.4"/></svg></button>
+      <button data-stamp="heart" title="Heart"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 20.6C6.4 16.9 3 13.9 3 10.4 3 8 4.9 6.2 7.2 6.2c1.8 0 3.6 1 4.8 2.7 1.2-1.7 3-2.7 4.8-2.7 2.3 0 4.2 1.8 4.2 4.2 0 3.5-3.4 6.5-9 10.2z"/></svg></button>
+      <button data-stamp="question" title="Question mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9.2 9.2a2.9 2.9 0 1 1 4.1 2.7c-.9.35-1.3.9-1.3 2.1"/><circle cx="12" cy="17.6" r="0.4" fill="currentColor"/></svg></button>
+      <button data-stamp="exclaim" title="Exclamation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 4.5v9"/><circle cx="12" cy="17.8" r="0.4" fill="currentColor"/></svg></button>
+      <button data-stamp="pin" title="Pin — mark the spot"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.5S5 15.4 5 9.9A7 7 0 0 1 19 9.9c0 5.5-7 11.6-7 11.6zm0-9.3a2.4 2.4 0 1 0 0-4.8 2.4 2.4 0 0 0 0 4.8z" fill-rule="evenodd"/></svg></button>
+      <button data-stamp="smiley" title="Smiley"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><circle cx="9.2" cy="10" r="0.5" fill="currentColor" stroke="none"/><circle cx="14.8" cy="10" r="0.5" fill="currentColor" stroke="none"/><path d="M8.2 14.2a5 5 0 0 0 7.6 0"/></svg></button>
+      <button data-stamp="ring" title="Ring — circle it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><circle cx="12" cy="12" r="7.5"/></svg></button>
     </div>
     <label>Color</label>
     <div class="swatches" id="swatches">
@@ -179,8 +299,21 @@
       <button class="swatch" data-color="52,199,89" style="background:rgb(52,199,89)" title="Green"></button>
       <button class="swatch" data-color="0,122,255" style="background:rgb(0,122,255)" title="Blue"></button>
       <button class="swatch" data-color="255,255,255" style="background:rgb(255,255,255)" title="White"></button>
+      <label class="swatch colorpick" title="Any color…"><input type="color" id="colorInput" value="#ff3b30"></label>
+      <span class="cur-chip" id="curChip" style="background:rgb(255,59,48)" title="Current working color"></span>
+      <span class="cur-hex" id="curHex">#FF3B30</span>
     </div>
-    <h2>Beautify</h2>
+    <label>Line weight <span id="weightVal">medium</span> — also sets blur & pixelate strength</label>
+    <input type="range" id="weight" min="15" max="120" step="1" value="40" style="width:100%">
+    <h3 class="subh">Edit</h3>
+    <div class="editbar">
+      <button id="btnUndo" disabled title="Undo (Ctrl+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 6.5 L4.5 10.5 L8.5 14.5"/><path d="M4.5 10.5 H15 a5 5 0 0 1 0 10 h-3"/></svg>Undo</button>
+      <button id="btnRedo" disabled title="Redo (Ctrl+Shift+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 6.5 L19.5 10.5 L15.5 14.5"/><path d="M19.5 10.5 H9 a5 5 0 0 0 0 10 h3"/></svg>Redo</button>
+      <button id="btnDelete" class="danger" title="Delete the selected annotation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4.5 6.5 h15"/><path d="M9.5 6.2 V4 h5 v2.2"/><path d="M6.5 6.5 l1 13.5 h9 l1 -13.5"/><path d="M10 10.5 v6"/><path d="M14 10.5 v6"/></svg>Delete</button>
+    </div>
+    </details>
+    <details class="panel" id="panel-beautify">
+    <summary>Beautify</summary>
     <label>Padding <span id="padVal"></span></label>
     <input type="range" id="pad" min="0" max="0.18" step="0.005" value="0.06">
     <label><input type="checkbox" id="padLink" checked> Same padding on all sides</label>
@@ -197,6 +330,16 @@
     <label>Corner radius <span id="radVal"></span></label>
     <input type="range" id="rad" min="0" max="0.05" step="0.002" value="0.012">
     <label><input type="checkbox" id="shadow" checked> Drop shadow</label>
+    <label>Frame effect</label>
+    <div class="dropdown" id="effectDropdown">
+      <button type="button" id="effectButton" class="dropdown-btn"><span id="effectLabel">No frame</span><span>▾</span></button>
+      <div class="dropdown-menu" id="effectMenu" hidden>
+        <button type="button" data-val="none" class="active">No frame</button>
+        <button type="button" data-val="instant">📸 Instant photo — white frame, deep chin</button>
+        <button type="button" data-val="postcard">✉ Postcard — slim border, hairline</button>
+        <button type="button" data-val="peeled">◢ Peeled corner — dog-eared</button>
+      </div>
+    </div>
     <label>Background</label>
     <div class="dropdown" id="bgDropdown">
       <button type="button" id="bgButton" class="dropdown-btn"><span id="bgLabel">Brand indigo</span><span>▾</span></button>
@@ -209,52 +352,129 @@
       </div>
     </div>
     <label>Canvas shape (grows the canvas — never crops your shot)</label>
-    <select id="aspect">
-      <option value="">Auto — fit the shot</option>
-      <option value="1">Square 1:1</option>
-      <option value="1.7777778">Landscape 16:9</option>
-      <option value="1.3333334">Classic 4:3</option>
-      <option value="1.5">Photo 3:2</option>
-      <option value="0.5625">Portrait 9:16</option>
-    </select>
+    <div class="dropdown" id="aspectDropdown">
+      <button type="button" id="aspectButton" class="dropdown-btn"><span id="aspectLabel">Auto — fit the shot</span><span>▾</span></button>
+      <div class="dropdown-menu" id="aspectMenu" hidden>
+        <button type="button" data-val="" class="active">Auto — fit the shot</button>
+        <button type="button" data-val="1">Square 1:1</button>
+        <button type="button" data-val="1.7777778">Landscape 16:9</button>
+        <button type="button" data-val="1.3333334">Classic 4:3</button>
+        <button type="button" data-val="1.5">Photo 3:2</button>
+        <button type="button" data-val="0.8">Portrait 4:5</button>
+        <button type="button" data-val="0.5625">Portrait 9:16</button>
+        <div class="menu-sep">Post it</div>
+        <button type="button" data-val="1">Instagram — Square 1:1</button>
+        <button type="button" data-val="0.8">Instagram — Portrait 4:5</button>
+        <button type="button" data-val="1.91">Instagram — Wide 1.91:1</button>
+        <button type="button" data-val="1.7777778">X — Wide 16:9</button>
+        <button type="button" data-val="0.8">Threads — Portrait 4:5</button>
+        <button type="button" data-val="1">Threads — Square 1:1</button>
+        <button type="button" data-val="1.7777778">Bluesky — Wide 16:9</button>
+        <button type="button" data-val="1">Bluesky — Square 1:1</button>
+        <button type="button" data-val="1">Pixelfed (Canada) — Square 1:1</button>
+        <button type="button" data-val="0.8">Pixelfed (Canada) — Portrait 4:5</button>
+        <button type="button" data-val="1.7777778">Mastodon (Europe) — Wide 16:9</button>
+        <button type="button" data-val="1">Mastodon (Europe) — Square 1:1</button>
+      </div>
+    </div>
     <label>Presets</label>
     <div class="row">
-      <select id="presetSel"></select>
+      <div class="dropdown" id="presetDropdown">
+        <button type="button" id="presetButton" class="dropdown-btn"><span id="presetLabel">No presets yet</span><span>▾</span></button>
+        <div class="dropdown-menu" id="presetMenu" hidden></div>
+      </div>
       <button id="btnPresetApply">Apply</button>
     </div>
     <div class="row" style="margin-top:.4rem">
       <button id="btnPresetSave">Save current as…</button>
       <button id="btnPresetDelete">Delete</button>
     </div>
-    <h2>Output</h2>
+    <div class="row" style="margin-top:.4rem">
+      <button id="btnAutoBalance" class="primary" style="flex:1">✨ Auto-balance</button>
+    </div>
+    <p class="lib-meta" style="margin-top:.3rem">One tap: background sampled from your shot's own edges, balanced padding, nearest friendly canvas shape, soft shadow. The Xnapper trick.</p>
+    </details>
+    <details class="panel" id="panel-output">
+    <summary>Output</summary>
+    <label>Shot name — named shots are findable shots</label>
+    <input type="text" id="shotName" placeholder="e.g. Paul's passport — List A" autocomplete="off" style="width:100%;height:2rem;border-radius:9px;background:#1b222f;border:1px solid var(--border);color:var(--ink);padding:0 .6rem;margin-bottom:.5rem">
     <div class="row">
-      <select id="fmtSel">
-        <option value="png">PNG</option>
-        <option value="jpg">JPG</option>
-        <option value="webp">WebP</option>
-      </select>
-      <select id="scaleSel">
-        <option value="1">1× size</option>
-        <option value="2">2× size</option>
-      </select>
+      <div class="dropdown" id="fmtDropdown">
+        <button type="button" id="fmtButton" class="dropdown-btn"><span id="fmtLabel">PNG</span><span>▾</span></button>
+        <div class="dropdown-menu" id="fmtMenu" hidden>
+          <button type="button" data-val="png" class="active">PNG</button>
+          <button type="button" data-val="jpg">JPG</button>
+          <button type="button" data-val="webp">WebP</button>
+        </div>
+      </div>
+      <div class="dropdown" id="scaleDropdown">
+        <button type="button" id="scaleButton" class="dropdown-btn"><span id="scaleLabel">1× size</span><span>▾</span></button>
+        <div class="dropdown-menu" id="scaleMenu" hidden>
+          <button type="button" data-val="1" class="active">1× size</button>
+          <button type="button" data-val="2">2× size</button>
+        </div>
+      </div>
       <button id="btnExportFmt">Export</button>
     </div>
+    <h3 class="subh">Text in this shot (OCR)</h3>
+    <div class="row">
+      <button id="btnGrabText" style="flex:1">Read text</button>
+      <button id="btnCopyText" style="flex:1">Copy text</button>
+    </div>
+    <button id="btnInstallOcr" style="width:100%;margin-top:.4rem" hidden>Install the OCR engine — one click, system prompt</button>
+    <textarea id="ocrText" rows="4" readonly placeholder="Text read from the shot lands here — and gets saved with it, so the library can search by content. Runs fully offline." style="width:100%;margin-top:.45rem;border-radius:9px;background:#1b222f;border:1px solid var(--border);color:var(--ink);padding:.5rem .6rem;font-size:.78rem;resize:vertical"></textarea>
+    </details>
     <h2>Preview (export truth)</h2>
     <canvas id="preview" width="288" height="160"></canvas>
-    <h2>Help</h2>
+    <details class="panel" id="panel-help">
+    <summary>Help & settings</summary>
     <details class="diag">
       <summary>Diagnostics &amp; capture backend</summary>
       <label>Capture backend</label>
-      <select id="backendSel">
-        <option value="auto">Auto (recommended)</option>
-        <option value="portal">System picker (portal)</option>
-        <option value="wlroots">wlroots</option>
-        <option value="x11">X11</option>
-      </select>
+      <div class="dropdown" id="backendDropdown">
+        <button type="button" id="backendButton" class="dropdown-btn"><span id="backendLabel">Auto (recommended)</span><span>▾</span></button>
+        <div class="dropdown-menu" id="backendMenu" hidden>
+          <button type="button" data-val="auto" class="active">Auto (recommended)</button>
+          <button type="button" data-val="portal">System picker (portal)</button>
+          <button type="button" data-val="wlroots">wlroots</button>
+          <button type="button" data-val="x11">X11</button>
+        </div>
+      </div>
       <div id="backendNote" style="margin:.35rem 0"></div>
       <table id="diagTable"></table>
       <p>On this desktop the screenshot itself comes from the system's own picker — Screensnips hands you the frame the moment you've framed it. One honest gap: GNOME doesn't offer apps a global-hotkey service here, so for a keyboard shortcut, open your desktop's keyboard settings and bind a key to <b>screensnips --capture=picker</b> (region/window picker) or <b>screensnips --capture=full</b> (instant full screen).</p>
       <p>Framing your own region on the canvas, pinning a shot to the desktop, and drag-out to other apps are planned, not present — nothing here pretends otherwise.</p>
+    </details>
+    <h3 class="subh">Preferences</h3>
+    <details class="diag" open>
+      <summary>Where pictures are saved</summary>
+      <label>Save folder (blank = default ~/Pictures/Screensnips)</label>
+      <input type="text" id="saveDirInput" placeholder="~/Pictures/Screensnips" style="width:100%;height:2rem;border-radius:9px;background:#1b222f;border:1px solid var(--border);color:var(--ink);padding:0 .6rem">
+      <div class="lib-meta" id="saveDirEffective" style="margin:.35rem 0"></div>
+      <div class="row">
+        <button id="btnSaveDir">Save folder</button>
+        <button id="btnSaveDirDefault">Use default</button>
+      </div>
+      <label style="margin-top:.65rem">Auto-delete old shots</label>
+      <div class="dropdown" id="retentionDropdown">
+        <button type="button" id="retentionButton" class="dropdown-btn"><span id="retentionLabel">Never</span><span>▾</span></button>
+        <div class="dropdown-menu" id="retentionMenu" hidden>
+          <button type="button" data-val="0" class="active">Never</button>
+          <button type="button" data-val="30">After 30 days</button>
+          <button type="button" data-val="60">After 60 days</button>
+          <button type="button" data-val="90">After 90 days</button>
+          <button type="button" data-val="190">After 190 days</button>
+          <button type="button" data-val="365">After 365 days</button>
+        </div>
+      </div>
+      <div class="row" style="margin-top:.45rem"><button id="btnSweep">Sweep now</button></div>
+      <p class="lib-meta" style="margin-top:.35rem">The sweep deletes the shot, its annotation sidecar, and its export together. It runs at startup and when you press Sweep now — never behind your back mid-session.</p>
+    </details>
+    <details class="diag" style="margin-top:.6rem">
+      <summary>Factory reset</summary>
+      <p style="margin:.4rem 0">Restore every Screensnips preference to how it shipped: capture backend, save folder, presets, and panel defaults. Your pictures and annotations are NOT touched. The old settings files are kept as timestamped backups in the config folder.</p>
+      <button id="btnFactoryReset" class="danger">Reset to factory defaults</button>
+    </details>
     </details>
     <div class="row" style="margin-top:.7rem">
       <button id="btnBug">Report a Bug</button>
@@ -262,6 +482,18 @@
     </div>
   </aside>
 </main>
+<div id="wizard" hidden>
+  <div class="wiz-panel">
+    <div class="wiz-head"><strong>🧹 Library cleanup</strong><span id="wizSummary" class="cur-hex"></span><button id="btnWizClose" title="Close">✕</button></div>
+    <div id="wizBody"></div>
+    <div class="wiz-foot">
+      <span id="wizCount"></span>
+      <button id="btnWizDelete" class="danger" disabled>Delete selected</button>
+      <button id="btnWizCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+<div id="ctxmenu" hidden></div>
 <script>
 const invoke = window.__TAURI__.core.invoke;
 const protoBase = navigator.userAgent.includes('Windows') ? 'http://shot.localhost' : 'shot://localhost';
@@ -278,7 +510,21 @@ let imgW = 0, imgH = 0, pendingCrop = null;
 let curColor = { r:255, g:59, b:48, a:255 };
 let curStamp = 'check';
 let customBg = null;
+let previewRot = null;
+let rotateHandlePos = null;
+let docCorners = null;
+let docHover = null;
 let bgKey = 'indigo';
+let delayVal = '0';
+let aspectVal = '';
+let presetName = '';
+let aspectDd = null;
+let presetDd = null;
+let frameVal = 'none';
+let effectDd = null;
+let fmtVal = 'png';
+let scaleVal = '1';
+let backendDd = null;
 const BG_LABELS = { indigo:'Brand indigo', dark:'Near black', light:'Paper', sunset:'Sunset gradient', blurred:'Blurred screenshot' };
 function syncBgUi(activeKey){
   document.getElementById('bgLabel').textContent =
@@ -288,16 +534,91 @@ function syncBgUi(activeKey){
 }
 let shadowCfg = { blur:0.03, offset_y:0.012, opacity:0.35 };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-function strokeStyle(extra){ return Object.assign({ stroke: curColor, stroke_width: 0.004, fill: null, font_size: null }, extra || {}); }
+let weightFrac = 0.004;
+function strokeStyle(extra){ return Object.assign({ stroke: curColor, stroke_width: weightFrac, fill: null, font_size: null }, extra || {}); }
 function snap45(s, p, shift){
   if(!shift) return p;
-  const dx = p.x - s.x, dy = p.y - s.y;
+  // Angles live in PIXEL space — normalized coords squash y on wide
+  // screens, so a "45°" snap computed there isn't 45° at all.
+  const dx = (p.x - s.x) * imgW, dy = (p.y - s.y) * imgH;
   const a = Math.round(Math.atan2(dy, dx) / (Math.PI/4)) * (Math.PI/4);
   const len = Math.hypot(dx, dy);
-  return { x: s.x + len*Math.cos(a), y: s.y + len*Math.sin(a) };
+  return { x: s.x + (len*Math.cos(a)) / imgW, y: s.y + (len*Math.sin(a)) / imgH };
 }
 
+const loupe = document.getElementById('loupe');
+const lctx = loupe.getContext('2d');
+function showLoupe(p){
+  if(!imgW || !imgH) return;
+  const S = 176, src = 60; // 60 image px across the loupe ≈ 3× zoom
+  loupe.hidden = false;
+  const wrap = document.getElementById('canvasWrap').getBoundingClientRect();
+  const r = overlay.getBoundingClientRect();
+  const px = r.left - wrap.left + p.x * r.width;
+  const py = r.top - wrap.top + p.y * r.height;
+  let lx = px + 24, ly = py - S - 24;
+  if(ly < 0) ly = py + 24;
+  if(lx + S > wrap.width) lx = px - S - 24;
+  if(lx < 0) lx = 4;
+  loupe.style.left = lx + 'px'; loupe.style.top = ly + 'px';
+  loupe.style.width = S + 'px'; loupe.style.height = S + 'px';
+  const cx = p.x * imgW, cy = p.y * imgH;
+  lctx.imageSmoothingEnabled = false;
+  lctx.clearRect(0, 0, S, S);
+  try{ lctx.drawImage(editCanvas, cx - src / 2, cy - src / 2, src, src, 0, 0, S, S); }catch(e){}
+  lctx.strokeStyle = 'rgba(111,211,255,.9)'; lctx.lineWidth = 1;
+  lctx.beginPath();
+  lctx.moveTo(S / 2, 8); lctx.lineTo(S / 2, S - 8);
+  lctx.moveTo(8, S / 2); lctx.lineTo(S - 8, S / 2);
+  lctx.stroke();
+}
+function hideLoupe(){ loupe.hidden = true; }
+overlay.addEventListener('pointerleave', hideLoupe);
+overlay.addEventListener('dblclick', async () => {
+  if(!doc || selectedId == null) return;
+  const prim = doc.primitives.find(x => x.id === selectedId);
+  if(prim && prim.kind.type === 'arrow' && (prim.kind.bend || 0) !== 0){
+    try{ await invoke('set_bend', { id: selectedId, bend: 0 }); await refresh(); setStatus('Arrow straightened.'); }
+    catch(e){ setStatus('Straighten failed: ' + e); }
+  }
+});
+
 function setStatus(s){ statusEl.textContent = s; }
+function showQuick(){ $('quickbar').classList.add('show'); $('quickScrim').classList.add('show'); }
+function hideQuick(){ $('quickbar').classList.remove('show'); $('quickScrim').classList.remove('show'); }
+
+// Universal tool hints (Dickles' law): EVERY markup tool states its
+// gesture, its modifiers, and how to commit/cancel — in the one hint
+// bar above the canvas, at a legible size. A tool without an entry
+// here shows a blank bar, which is a shipping bug.
+const TOOL_HINTS = {
+  select: '<b>Select:</b> click an annotation to select it · drag to move · corner handles resize · Delete removes it · arrow keys nudge (Shift = ×10)',
+  arrow: '<b>Arrow:</b> drag to draw · <b>Shift</b> snaps to 45° · on a selected arrow, drag the diamond handle to bend it · <b>Esc</b> cancels',
+  line: '<b>Line:</b> drag to draw · <b>Shift</b> snaps to 45° · release to commit · <b>Esc</b> cancels',
+  pen: '<b>Pen:</b> draw freehand — the stroke follows your pointer · release to commit · <b>Esc</b> cancels',
+  rect: '<b>Rectangle:</b> drag to draw · release to commit · <b>Esc</b> cancels',
+  ellipse: '<b>Ellipse:</b> drag to draw · release to commit · <b>Esc</b> cancels',
+  highlight: '<b>Highlight:</b> drag like a marker — the translucent stroke tints whatever it crosses · Line weight fattens the nib · release to commit',
+  step: '<b>Step badge:</b> click to drop the next number · badges renumber themselves as you add or delete them',
+  text: '<b>Text:</b> click where the label starts, then type it in the dialog · OK commits · Cancel backs out',
+  callout: '<b>Callout:</b> drag from the thing you mean to where the bubble lands, then type · OK commits · Cancel backs out',
+  spotlight: '<b>Spotlight:</b> drag the lit window — everything outside it dims · release to commit · <b>Esc</b> cancels',
+  blur: '<b>Blur:</b> drag over anything private — names, faces, plates. Privacy-grade: nothing reads through it · Line weight sets the strength',
+  pixelate: '<b>Pixelate:</b> drag over anything private to break it into blocks · Line weight sets the block size',
+  crop: '<b>Crop:</b> drag the region you want to keep · <b>Enter</b> applies the crop · <b>Esc</b> cancels',
+  eyedropper: '<b>Eyedropper:</b> click any pixel in the shot to make it your working color',
+  document: '<b>Document:</b> straighten a skewed photo or scan — check the four corners (drag any that are off), then pick Auto shape / ID card / Passport in the bar above the canvas',
+  stamp: '<b>Stamp:</b> click the shot to place it · on a selected stamp, drag the ring handle above it to rotate',
+};
+function updateToolHint(t){
+  const el = $('toolHint');
+  if(el) el.innerHTML = TOOL_HINTS[t] || '';
+}
+// NOTE: no init call here — $ is a const declared much later in this
+// script, so calling updateToolHint at eval time would hit the
+// temporal dead zone and kill the whole script (this exact bug made
+// the first fix-pass build a dead window; the live ship check caught
+// it). The startup IIFE below makes the call at runtime instead.
 function css(color){ return `rgba(${color.r},${color.g},${color.b},${color.a/255})`; }
 
 async function fetchFrame(route){
@@ -327,25 +648,65 @@ async function drawPreview(){
   }catch(e){ /* no capture yet */ }
 }
 
+// Pixel-space arrow curve geometry, shared by the overlay, the bend
+// handle, and bbox math. Returns [controlPoint, apex] in image pixels.
+function arrowCurvePx(k, bend){
+  const fx = k.from.x * imgW, fy = k.from.y * imgH;
+  const tx = k.to.x * imgW, ty = k.to.y * imgH;
+  const dx = tx - fx, dy = ty - fy;
+  const len = Math.hypot(dx, dy) || 1;
+  const b = typeof bend === 'number' ? bend : (k.bend || 0);
+  const nx = -dy / len, ny = dx / len;
+  const cx = (fx + tx) / 2 + nx * b * len, cy = (fy + ty) / 2 + ny * b * len;
+  const ax = 0.25 * fx + 0.5 * cx + 0.25 * tx, ay = 0.25 * fy + 0.5 * cy + 0.25 * ty;
+  return [{ x: cx, y: cy }, { x: ax, y: ay }];
+}
+let previewBend = null;
+let bendHandlePos = null;
+
 function primBBox(p){
   const k = p.kind;
   const box = (x,y,w,h)=>({x,y,w,h});
   switch(k.type){
-    case 'arrow': case 'line': {
+    case 'arrow': {
+      const x=Math.min(k.from.x,k.to.x), y=Math.min(k.from.y,k.to.y);
+      let b = box(x,y,Math.abs(k.to.x-k.from.x)||0.02,Math.abs(k.to.y-k.from.y)||0.02);
+      const bend = k.bend || 0;
+      if(Math.abs(bend) > 0.001 && imgW && imgH){
+        const [, apex] = arrowCurvePx(k);
+        const ax = apex.x / imgW, ay = apex.y / imgH;
+        const x0 = Math.min(b.x, ax), y0 = Math.min(b.y, ay);
+        b = box(x0, y0, Math.max(b.x + b.w, ax) - x0, Math.max(b.y + b.h, ay) - y0);
+      }
+      return b;
+    }
+    case 'line': {
       const x=Math.min(k.from.x,k.to.x), y=Math.min(k.from.y,k.to.y);
       return box(x,y,Math.abs(k.to.x-k.from.x)||0.02,Math.abs(k.to.y-k.from.y)||0.02);
     }
-    case 'rect': case 'ellipse': case 'highlight': case 'blur': case 'pixelate': case 'spotlight': return k.rect;
+    case 'rect': case 'ellipse': case 'blur': case 'pixelate': case 'spotlight': return k.rect;
     case 'text': case 'step_badge': return box(k.at.x,k.at.y,0.05,0.05);
-    case 'stamp': return box(k.at.x,k.at.y,k.scale, imgW ? k.scale*imgW/imgH : k.scale);
+    case 'stamp': {
+      const hFrac = imgW ? k.scale*imgW/imgH : k.scale;
+      const rad = (k.rotation_deg || 0) * Math.PI/180;
+      const f = Math.max(1, Math.abs(Math.cos(rad)) + Math.abs(Math.sin(rad)));
+      const cx = k.at.x + k.scale/2, cy = k.at.y + hFrac/2;
+      return { x: cx - k.scale*f/2, y: cy - hFrac*f/2, w: k.scale*f, h: hFrac*f };
+    }
     case 'callout': {
       const fs = p.style.font_size ?? 0.045;
       const lines = k.text.split('\n');
-      const w = 0.03 + Math.max(...lines.map(l => l.length)) * 0.62 * fs;
-      const hPx = lines.length * (fs*imgW) * 1.3 + (fs*imgW) * 0.63;
+      const fsPx = fs*imgW;
+      // Measured, not estimated (audit fix): the canvas measures with
+      // the same face it draws with, mirroring the renderer's
+      // callout_box_px — editor, model, and export boxes now agree.
+      octx.font = `600 ${fsPx}px system-ui`;
+      const tw = Math.max(...lines.map(l => octx.measureText(l).width));
+      const w = imgW ? (tw + fsPx*0.9)/imgW : 0.1;
+      const hPx = lines.length * fsPx * 1.3 + fsPx * 0.63;
       return box(k.at.x, k.at.y, w, imgH ? hPx/imgH : w);
     }
-    case 'freehand': {
+    case 'freehand': case 'highlight': {
       let x0=1,y0=1,x1=0,y1=0;
       for(const pt of k.points){ x0=Math.min(x0,pt.x); y0=Math.min(y0,pt.y); x1=Math.max(x1,pt.x); y1=Math.max(y1,pt.y); }
       return box(x0,y0,x1-x0,y1-y0);
@@ -354,126 +715,275 @@ function primBBox(p){
   return box(0,0,1,1);
 }
 
-function drawHandles(b){
+function drawHandles(ctx, b){
   const pts = [
     [b.x,b.y],[b.x+b.w/2,b.y],[b.x+b.w,b.y],
     [b.x,b.y+b.h/2],[b.x+b.w,b.y+b.h/2],
     [b.x,b.y+b.h],[b.x+b.w/2,b.y+b.h],[b.x+b.w,b.y+b.h]
   ];
-  octx.save();
-  octx.strokeStyle = '#6fd3ff'; octx.setLineDash([6,4]); octx.lineWidth = 1.5;
-  octx.strokeRect(b.x*imgW, b.y*imgH, b.w*imgW, b.h*imgH);
-  octx.setLineDash([]);
+  ctx.save();
+  ctx.strokeStyle = '#6fd3ff'; ctx.setLineDash([6,4]); ctx.lineWidth = 1.5;
+  ctx.strokeRect(b.x*imgW, b.y*imgH, b.w*imgW, b.h*imgH);
+  ctx.setLineDash([]);
   for(const [hx,hy] of pts){
-    octx.beginPath();
-    octx.arc(hx*imgW, hy*imgH, Math.max(6, imgW*0.006), 0, Math.PI*2);
-    octx.fillStyle = '#fff'; octx.fill();
-    octx.lineWidth = 2; octx.strokeStyle = '#1477a8'; octx.stroke();
+    ctx.beginPath();
+    ctx.arc(hx*imgW, hy*imgH, Math.max(6, imgW*0.006), 0, Math.PI*2);
+    ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#1477a8'; ctx.stroke();
   }
-  octx.restore();
+  ctx.restore();
+}
+
+// ------------------------------------------------------------------
+// Step 0 presentation law (audit fix): the primitive layer paints
+// into an offscreen cache keyed on EVERYTHING it depends on.
+// Pointer moves during move/create/pen/resize drags change none
+// of those inputs, so a move costs one drawImage blit plus the
+// live transients (handles, drafts, staged crop) — instead of
+// re-rasterizing every primitive (blur filters, pixelate, text)
+// per mouse event. Bend/rotate drags change previewBend/previewRot,
+// which are in the key, so those still repaint the layer.
+let primCache = null, primCacheKey = '';
+function paintPrimLayer(ctx){
+  // spotlights dim everything outside their window, under all ink
+  for(const p of doc.primitives){
+    if(p.kind.type !== 'spotlight') continue;
+    const r = p.kind.rect;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.59)';
+    ctx.fillRect(0, 0, imgW, r.y*imgH);
+    ctx.fillRect(0, (r.y+r.h)*imgH, imgW, imgH - (r.y+r.h)*imgH);
+    ctx.fillRect(0, r.y*imgH, r.x*imgW, r.h*imgH);
+    ctx.fillRect((r.x+r.w)*imgW, r.y*imgH, imgW - (r.x+r.w)*imgW, r.h*imgH);
+    ctx.restore();
+  }
+  let stepN = 0;
+  for(const p of doc.primitives){
+    const k = p.kind, st = p.style;
+    ctx.save();
+    ctx.strokeStyle = css(st.stroke); ctx.fillStyle = css(st.stroke);
+    ctx.lineWidth = Math.max(1.5, st.stroke_width*imgW);
+    const X = v => v*imgW, Y = v => v*imgH;
+    if(k.type==='arrow' || k.type==='line'){
+      const bendEff = (p.id === selectedId && typeof previewBend === 'number') ? previewBend : (k.bend || 0);
+      if(k.type==='arrow' && Math.abs(bendEff) > 0.001){
+        const [ctrl] = arrowCurvePx(k, bendEff);
+        ctx.beginPath();
+        ctx.moveTo(X(k.from.x), Y(k.from.y));
+        ctx.quadraticCurveTo(ctrl.x, ctrl.y, X(k.to.x), Y(k.to.y));
+        ctx.stroke();
+        const ang = Math.atan2(Y(k.to.y) - ctrl.y, X(k.to.x) - ctrl.x);
+        const hl = Math.max(12, st.stroke_width*imgW*4);
+        ctx.beginPath();
+        ctx.moveTo(X(k.to.x),Y(k.to.y));
+        ctx.lineTo(X(k.to.x)-hl*Math.cos(ang-0.42), Y(k.to.y)-hl*Math.sin(ang-0.42));
+        ctx.lineTo(X(k.to.x)-hl*Math.cos(ang+0.42), Y(k.to.y)-hl*Math.sin(ang+0.42));
+        ctx.closePath(); ctx.fill();
+      } else {
+        ctx.beginPath(); ctx.moveTo(X(k.from.x),Y(k.from.y)); ctx.lineTo(X(k.to.x),Y(k.to.y)); ctx.stroke();
+        if(k.type==='arrow'){
+          const ang = Math.atan2(Y(k.to.y)-Y(k.from.y), X(k.to.x)-X(k.from.x));
+          const hl = Math.max(12, st.stroke_width*imgW*4);
+          ctx.beginPath();
+          ctx.moveTo(X(k.to.x),Y(k.to.y));
+          ctx.lineTo(X(k.to.x)-hl*Math.cos(ang-0.42), Y(k.to.y)-hl*Math.sin(ang-0.42));
+          ctx.lineTo(X(k.to.x)-hl*Math.cos(ang+0.42), Y(k.to.y)-hl*Math.sin(ang+0.42));
+          ctx.closePath(); ctx.fill();
+        }
+      }
+    } else if(k.type==='rect'){
+      if(st.fill){ ctx.fillStyle = css(st.fill); ctx.fillRect(X(k.rect.x),Y(k.rect.y),k.rect.w*imgW,k.rect.h*imgH); }
+      ctx.strokeRect(X(k.rect.x),Y(k.rect.y),k.rect.w*imgW,k.rect.h*imgH);
+    } else if(k.type==='ellipse'){
+      ctx.beginPath();
+      ctx.ellipse(X(k.rect.x+k.rect.w/2), Y(k.rect.y+k.rect.h/2), k.rect.w*imgW/2, k.rect.h*imgH/2, 0, 0, Math.PI*2);
+      if(st.fill){ ctx.fillStyle = css(st.fill); ctx.fill(); }
+      ctx.stroke();
+    } else if(k.type==='highlight'){
+      // The pen: a thick translucent stroke along the path (the
+      // exporter multiply-tints with the same geometry/width).
+      ctx.save();
+      ctx.globalAlpha = 0.45;
+      ctx.lineWidth = Math.max(10, Math.min(160, st.stroke_width*imgW*4));
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      (k.points || []).forEach((pt, i) => { if(i===0) ctx.moveTo(X(pt.x), Y(pt.y)); else ctx.lineTo(X(pt.x), Y(pt.y)); });
+      if((k.points || []).length === 1) ctx.lineTo(X(k.points[0].x) + 0.01, Y(k.points[0].y));
+      ctx.stroke();
+      ctx.restore();
+    } else if(k.type==='blur' || k.type==='pixelate'){
+      // WYSIWYG privacy preview (audit/dogfood fix — this used to be
+      // a grey placeholder box, so Blur "didn't blur"): paint the
+      // actual effect from the editor's base pixels, same strength
+      // formulas as the exporter.
+      const bx = X(k.rect.x), by = Y(k.rect.y), bw = k.rect.w*imgW, bh = k.rect.h*imgH;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(bx, by, bw, bh); ctx.clip();
+      if(k.type==='blur'){
+        const r = Math.max(12, Math.min(64, st.stroke_width*imgW*2.5));
+        ctx.filter = `blur(${Math.max(1, r/2)}px)`;
+        // overdraw past the clip so the filter's edge fade never shows
+        ctx.drawImage(editCanvas, bx - r, by - r, bw + 2*r, bh + 2*r, bx - r, by - r, bw + 2*r, bh + 2*r);
+        ctx.filter = 'none';
+      } else {
+        const block = Math.max(4, Math.min(72, st.stroke_width*imgW*3.4));
+        const tw = Math.max(1, Math.round(bw/block)), th = Math.max(1, Math.round(bh/block));
+        const tmp = document.createElement('canvas'); tmp.width = tw; tmp.height = th;
+        tmp.getContext('2d').drawImage(editCanvas, bx, by, bw, bh, 0, 0, tw, th);
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(tmp, 0, 0, tw, th, bx, by, bw, bh);
+        ctx.imageSmoothingEnabled = true;
+      }
+      ctx.restore();
+    } else if(k.type==='step_badge'){
+      stepN++;
+      const r = Math.max(15, imgW*0.02);
+      ctx.beginPath(); ctx.arc(X(k.at.x),Y(k.at.y),r,0,Math.PI*2); ctx.fill();
+      ctx.font = `bold ${r*1.05}px system-ui`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      // dark outline first so the numeral reads on ANY background
+      ctx.lineWidth = Math.max(2, r*0.16);
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+      ctx.strokeText(String(stepN), X(k.at.x), Y(k.at.y)+1);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(String(stepN), X(k.at.x), Y(k.at.y)+1);
+    } else if(k.type==='text'){
+      ctx.fillStyle = css(st.stroke);
+      ctx.font = `600 ${(st.font_size ?? 0.045)*imgW}px system-ui`;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      k.text.split('\n').forEach((line, i) => {
+        ctx.fillText(line, X(k.at.x), Y(k.at.y) + i*(st.font_size ?? 0.045)*imgW*1.3);
+      });
+    } else if(k.type==='freehand'){
+      ctx.beginPath();
+      k.points.forEach((pt, i) => { if(i===0) ctx.moveTo(X(pt.x), Y(pt.y)); else ctx.lineTo(X(pt.x), Y(pt.y)); });
+      ctx.stroke();
+    } else if(k.type==='stamp'){
+      const glyphs = { check:'✓', cross:'✕', star:'★', warning:'⚠', arrow_up:'⬆', heart:'♥', question:'?', exclaim:'!', pin:'📍', smiley:'☺', ring:'○' };
+      const side = k.scale*imgW;
+      const rot = (p.id === selectedId && previewRot != null) ? previewRot : (k.rotation_deg || 0);
+      ctx.save();
+      ctx.translate(X(k.at.x)+side/2, Y(k.at.y)+side/2);
+      if(rot) ctx.rotate(rot*Math.PI/180);
+      ctx.fillStyle = css(st.stroke);
+      ctx.font = `${side*0.85}px system-ui`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(glyphs[k.stamp_id] || '?', 0, 0);
+      ctx.restore();
+    } else if(k.type==='callout'){
+      const fs = (st.font_size ?? 0.045)*imgW;
+      const lines = k.text.split('\n');
+      ctx.font = `600 ${fs}px system-ui`;
+      const tw = Math.max(...lines.map(l => ctx.measureText(l).width));
+      const pad = fs*0.45;
+      const bw = tw + pad*2, bh = lines.length*fs*1.3 + pad*1.4;
+      const bx = X(k.at.x), by = Y(k.at.y);
+      ctx.strokeStyle = css(st.stroke);
+      ctx.beginPath();
+      ctx.moveTo(Math.min(Math.max(X(k.tail.x), bx), bx+bw), Math.min(Math.max(Y(k.tail.y), by), by+bh));
+      ctx.lineTo(X(k.tail.x), Y(k.tail.y));
+      ctx.stroke();
+      ctx.beginPath(); ctx.arc(X(k.tail.x), Y(k.tail.y), Math.max(3, fs*0.12), 0, Math.PI*2);
+      ctx.fillStyle = css(st.stroke); ctx.fill();
+      ctx.fillStyle = st.fill ? css(st.fill) : 'rgba(17,20,27,0.93)';
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.strokeRect(bx, by, bw, bh);
+      ctx.fillStyle = '#fff';
+      ctx.font = `600 ${fs}px system-ui`;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      lines.forEach((line, i) => ctx.fillText(line, bx+pad, by+pad*0.65 + i*fs*1.3));
+    }
+    ctx.restore();
+    if(p.id === selectedId) drawHandles(ctx, primBBox(p));
+  }
 }
 
 function drawOverlay(temp){
   octx.clearRect(0,0,overlay.width,overlay.height);
   if(!doc) return;
-  // spotlights dim everything outside their window, under all ink
-  for(const p of doc.primitives){
-    if(p.kind.type !== 'spotlight') continue;
-    const r = p.kind.rect;
+  const key = JSON.stringify([imgW, imgH, selectedId, previewBend, previewRot, doc.primitives]);
+  if(!primCache) primCache = document.createElement('canvas');
+  if(key !== primCacheKey || primCache.width !== overlay.width || primCache.height !== overlay.height){
+    primCache.width = overlay.width; primCache.height = overlay.height;
+    const cctx = primCache.getContext('2d');
+    cctx.clearRect(0,0,primCache.width,primCache.height);
+    paintPrimLayer(cctx);
+    primCacheKey = key;
+  }
+  octx.drawImage(primCache, 0, 0);
+  // Document mode: the working quad (auto-detected or hand-placed)
+  if(docCorners && tool === 'document'){
     octx.save();
-    octx.fillStyle = 'rgba(0,0,0,0.59)';
-    octx.fillRect(0, 0, imgW, r.y*imgH);
-    octx.fillRect(0, (r.y+r.h)*imgH, imgW, imgH - (r.y+r.h)*imgH);
-    octx.fillRect(0, r.y*imgH, r.x*imgW, r.h*imgH);
-    octx.fillRect((r.x+r.w)*imgW, r.y*imgH, imgW - (r.x+r.w)*imgW, r.h*imgH);
+    const pts = docCorners.map(c => [c.x*imgW, c.y*imgH]);
+    octx.strokeStyle = '#6fd3ff'; octx.lineWidth = Math.max(1.6, imgW*0.002);
+    octx.beginPath();
+    pts.forEach(([x, y], i) => i ? octx.lineTo(x, y) : octx.moveTo(x, y));
+    if(pts.length === 4) octx.closePath();
+    else if(pts.length > 0 && docHover) octx.lineTo(docHover.x*imgW, docHover.y*imgH);
+    octx.stroke();
+    pts.forEach(([x, y], i) => {
+      octx.beginPath(); octx.arc(x, y, Math.max(8, imgW*0.009), 0, Math.PI*2);
+      octx.fillStyle = '#6fd3ff'; octx.fill();
+      octx.fillStyle = '#0b1220';
+      octx.font = `bold ${Math.max(11, imgW*0.011)}px system-ui`;
+      octx.textAlign = 'center'; octx.textBaseline = 'middle';
+      octx.fillText(String(i + 1), x, y + 1);
+    });
     octx.restore();
   }
-  let stepN = 0;
-  for(const p of doc.primitives){
-    const k = p.kind, st = p.style;
-    octx.save();
-    octx.strokeStyle = css(st.stroke); octx.fillStyle = css(st.stroke);
-    octx.lineWidth = Math.max(1.5, st.stroke_width*imgW);
-    const X = v => v*imgW, Y = v => v*imgH;
-    if(k.type==='arrow' || k.type==='line'){
-      octx.beginPath(); octx.moveTo(X(k.from.x),Y(k.from.y)); octx.lineTo(X(k.to.x),Y(k.to.y)); octx.stroke();
-      if(k.type==='arrow'){
-        const ang = Math.atan2(Y(k.to.y)-Y(k.from.y), X(k.to.x)-X(k.from.x));
-        const hl = Math.max(12, st.stroke_width*imgW*4);
-        octx.beginPath();
-        octx.moveTo(X(k.to.x),Y(k.to.y));
-        octx.lineTo(X(k.to.x)-hl*Math.cos(ang-0.42), Y(k.to.y)-hl*Math.sin(ang-0.42));
-        octx.lineTo(X(k.to.x)-hl*Math.cos(ang+0.42), Y(k.to.y)-hl*Math.sin(ang+0.42));
-        octx.closePath(); octx.fill();
-      }
-    } else if(k.type==='rect'){
-      if(st.fill){ octx.fillStyle = css(st.fill); octx.fillRect(X(k.rect.x),Y(k.rect.y),k.rect.w*imgW,k.rect.h*imgH); }
-      octx.strokeRect(X(k.rect.x),Y(k.rect.y),k.rect.w*imgW,k.rect.h*imgH);
-    } else if(k.type==='ellipse'){
+  // Rotation handle for a selected stamp: a stem rising from the top
+  // edge to a ring — drag it in a circle to spin the stamp.
+  rotateHandlePos = null;
+  if(selectedId != null){
+    const prim = doc.primitives.find(q => q.id === selectedId);
+    if(prim && prim.kind.type === 'stamp'){
+      const b = primBBox(prim);
+      const rect = overlay.getBoundingClientRect();
+      const disp = rect.width > 0 ? rect.width / imgW : 1;
+      const stemPx = 30 / disp, hrPx = 11 / disp;
+      const cxPx = (b.x + b.w/2) * imgW;
+      const topPx = b.y * imgH;
+      const hPx = topPx - stemPx - hrPx;
+      rotateHandlePos = { x: cxPx / imgW, y: hPx / imgH };
+      octx.save();
+      octx.strokeStyle = '#fff'; octx.lineWidth = Math.max(1.2, 1.4 / disp);
+      octx.beginPath(); octx.moveTo(cxPx, topPx); octx.lineTo(cxPx, hPx); octx.stroke();
+      octx.beginPath(); octx.arc(cxPx, hPx, hrPx, 0, Math.PI*2);
+      octx.fillStyle = '#232b3a'; octx.fill();
+      octx.strokeStyle = '#6fd3ff'; octx.lineWidth = Math.max(1.4, 1.8 / disp); octx.stroke();
+      octx.beginPath(); octx.arc(cxPx, hPx, hrPx*0.58, -0.5, Math.PI*1.2); octx.stroke();
+      const ea = Math.PI*1.2, ex = cxPx + hrPx*0.58*Math.cos(ea), ey = hPx + hrPx*0.58*Math.sin(ea);
       octx.beginPath();
-      octx.ellipse(X(k.rect.x+k.rect.w/2), Y(k.rect.y+k.rect.h/2), k.rect.w*imgW/2, k.rect.h*imgH/2, 0, 0, Math.PI*2);
-      if(st.fill){ octx.fillStyle = css(st.fill); octx.fill(); }
-      octx.stroke();
-    } else if(k.type==='highlight'){
-      octx.globalAlpha = 0.35; octx.fillRect(X(k.rect.x),Y(k.rect.y),k.rect.w*imgW,k.rect.h*imgH); octx.globalAlpha = 1;
-    } else if(k.type==='blur' || k.type==='pixelate'){
-      octx.globalAlpha = 0.45; octx.fillStyle = '#888';
-      octx.fillRect(X(k.rect.x),Y(k.rect.y),k.rect.w*imgW,k.rect.h*imgH); octx.globalAlpha = 1;
-      octx.strokeStyle = '#fff'; octx.setLineDash([4,4]); octx.strokeRect(X(k.rect.x),Y(k.rect.y),k.rect.w*imgW,k.rect.h*imgH); octx.setLineDash([]);
-    } else if(k.type==='step_badge'){
-      stepN++;
-      const r = Math.max(15, imgW*0.02);
-      octx.beginPath(); octx.arc(X(k.at.x),Y(k.at.y),r,0,Math.PI*2); octx.fill();
-      octx.font = `bold ${r*1.05}px system-ui`;
-      octx.textAlign='center'; octx.textBaseline='middle';
-      // dark outline first so the numeral reads on ANY background
-      octx.lineWidth = Math.max(2, r*0.16);
-      octx.strokeStyle = 'rgba(0,0,0,0.6)';
-      octx.strokeText(String(stepN), X(k.at.x), Y(k.at.y)+1);
-      octx.fillStyle = '#fff';
-      octx.fillText(String(stepN), X(k.at.x), Y(k.at.y)+1);
-    } else if(k.type==='text'){
-      octx.fillStyle = css(st.stroke);
-      octx.font = `600 ${(st.font_size ?? 0.045)*imgW}px system-ui`;
-      octx.textAlign = 'left'; octx.textBaseline = 'top';
-      k.text.split('\n').forEach((line, i) => {
-        octx.fillText(line, X(k.at.x), Y(k.at.y) + i*(st.font_size ?? 0.045)*imgW*1.3);
-      });
-    } else if(k.type==='freehand'){
-      octx.beginPath();
-      k.points.forEach((pt, i) => { if(i===0) octx.moveTo(X(pt.x), Y(pt.y)); else octx.lineTo(X(pt.x), Y(pt.y)); });
-      octx.stroke();
-    } else if(k.type==='stamp'){
-      const glyphs = { check:'✓', cross:'✕', star:'★', warning:'⚠', arrow_up:'⬆' };
-      const side = k.scale*imgW;
-      octx.fillStyle = css(st.stroke);
-      octx.font = `${side*0.85}px system-ui`;
-      octx.textAlign = 'center'; octx.textBaseline = 'middle';
-      octx.fillText(glyphs[k.stamp_id] || '?', X(k.at.x)+side/2, Y(k.at.y)+side/2);
-    } else if(k.type==='callout'){
-      const fs = (st.font_size ?? 0.045)*imgW;
-      const lines = k.text.split('\n');
-      const tw = Math.max(...lines.map(l => l.length)) * fs * 0.62;
-      const pad = fs*0.45;
-      const bw = tw + pad*2, bh = lines.length*fs*1.3 + pad*1.4;
-      const bx = X(k.at.x), by = Y(k.at.y);
-      octx.strokeStyle = css(st.stroke);
-      octx.beginPath();
-      octx.moveTo(Math.min(Math.max(X(k.tail.x), bx), bx+bw), Math.min(Math.max(Y(k.tail.y), by), by+bh));
-      octx.lineTo(X(k.tail.x), Y(k.tail.y));
-      octx.stroke();
-      octx.beginPath(); octx.arc(X(k.tail.x), Y(k.tail.y), Math.max(3, fs*0.12), 0, Math.PI*2);
-      octx.fillStyle = css(st.stroke); octx.fill();
-      octx.fillStyle = st.fill ? css(st.fill) : 'rgba(17,20,27,0.93)';
-      octx.fillRect(bx, by, bw, bh);
-      octx.strokeRect(bx, by, bw, bh);
-      octx.fillStyle = '#fff';
-      octx.font = `600 ${fs}px system-ui`;
-      octx.textAlign = 'left'; octx.textBaseline = 'top';
-      lines.forEach((line, i) => octx.fillText(line, bx+pad, by+pad*0.65 + i*fs*1.3));
+      octx.moveTo(ex, ey);
+      octx.lineTo(ex - hrPx*0.42, ey - hrPx*0.05);
+      octx.lineTo(ex - hrPx*0.05, ey + hrPx*0.42);
+      octx.closePath();
+      octx.fillStyle = '#6fd3ff'; octx.fill();
+      octx.restore();
     }
-    octx.restore();
-    if(p.id === selectedId) drawHandles(primBBox(p));
+  }
+  // Bend handle for a selected arrow: a diamond riding the curve's
+  // apex — drag it sideways to bow the arrow.
+  bendHandlePos = null;
+  if(selectedId != null){
+    const prim = doc.primitives.find(q => q.id === selectedId);
+    if(prim && prim.kind.type === 'arrow'){
+      const bendEff = typeof previewBend === 'number' ? previewBend : (prim.kind.bend || 0);
+      const [, apex] = arrowCurvePx(prim.kind, bendEff);
+      bendHandlePos = { x: apex.x / imgW, y: apex.y / imgH };
+      const rect = overlay.getBoundingClientRect();
+      const disp = rect.width > 0 ? rect.width / imgW : 1;
+      const r = 9 / disp;
+      octx.save();
+      octx.translate(apex.x, apex.y);
+      octx.rotate(Math.PI / 4);
+      octx.fillStyle = '#232b3a';
+      octx.strokeStyle = '#6fd3ff';
+      octx.lineWidth = Math.max(1.4, 1.8 / disp);
+      octx.fillRect(-r / 1.4, -r / 1.4, r * 1.42, r * 1.42);
+      octx.strokeRect(-r / 1.4, -r / 1.4, r * 1.42, r * 1.42);
+      octx.restore();
+    }
   }
   if(temp){
     octx.save();
@@ -494,7 +1004,7 @@ function drawOverlay(temp){
     octx.fillRect(0, c.y*imgH, c.x*imgW, c.h*imgH);
     octx.fillRect((c.x+c.w)*imgW, c.y*imgH, imgW - (c.x+c.w)*imgW, c.h*imgH);
     octx.restore();
-    drawHandles(c);
+    drawHandles(octx, c);
     octx.save();
     octx.fillStyle = '#fff'; octx.font = '13px system-ui';
     octx.fillText(`${Math.round(c.w*imgW)} × ${Math.round(c.h*imgH)} — Enter crops, Esc cancels`,
@@ -539,7 +1049,51 @@ overlay.addEventListener('pointerdown', ev => {
   if(!doc) return;
   const p = normPos(ev);
   overlay.setPointerCapture(ev.pointerId);
+  if(tool === 'document'){
+    if(docCorners && docCorners.length === 4){
+      const r = overlay.getBoundingClientRect();
+      const tol = window.matchMedia('(pointer: coarse)').matches ? 26 : 18;
+      for(let i = 0; i < 4; i++){
+        const dx = (p.x - docCorners[i].x) * r.width, dy = (p.y - docCorners[i].y) * r.height;
+        if(Math.hypot(dx, dy) <= tol){ drag = { mode:'doccorner', idx:i }; return; }
+      }
+      return;
+    }
+    if(docCorners && docCorners.length < 4){
+      docCorners.push(p);
+      if(docCorners.length === 4){
+        document.getElementById('docbar').classList.add('show');
+        setStatus('Framed. Drag corners to fine-tune, then straighten.');
+      } else {
+        setStatus(`Corner ${docCorners.length} set — ${4 - docCorners.length} to go (clockwise from top-left).`);
+      }
+      drawOverlay();
+    }
+    return;
+  }
   if(tool === 'select'){
+    if(bendHandlePos){
+      const r = overlay.getBoundingClientRect();
+      const dx = (p.x - bendHandlePos.x) * r.width, dy = (p.y - bendHandlePos.y) * r.height;
+      const tol = window.matchMedia('(pointer: coarse)').matches ? 26 : 16;
+      if(Math.hypot(dx, dy) <= tol){
+        const prim = doc.primitives.find(x => x.id === selectedId);
+        drag = { mode:'bend', from: {...prim.kind.from}, to: {...prim.kind.to}, orig: prim.kind.bend || 0, cur: prim.kind.bend || 0 };
+        return;
+      }
+    }
+    if(rotateHandlePos){
+      const r = overlay.getBoundingClientRect();
+      const dx = (p.x - rotateHandlePos.x) * r.width, dy = (p.y - rotateHandlePos.y) * r.height;
+      const tol = window.matchMedia('(pointer: coarse)').matches ? 26 : 16;
+      if(Math.hypot(dx, dy) <= tol){
+        const prim = doc.primitives.find(x => x.id === selectedId);
+        const k = prim.kind;
+        const center = { x: k.at.x + k.scale/2, y: k.at.y + (imgW ? k.scale*imgW/imgH : k.scale)/2 };
+        drag = { mode:'rotate', center, startAng: Math.atan2((p.y - center.y) * imgH, (p.x - center.x) * imgW), orig: k.rotation_deg || 0, cur: k.rotation_deg || 0 };
+        return;
+      }
+    }
     const hi = hitHandle(p);
     if(hi >= 0){
       const prim = doc.primitives.find(x => x.id === selectedId);
@@ -558,6 +1112,20 @@ overlay.addEventListener('pointerdown', ev => {
     }
     selectedId = null; drawOverlay(); return;
   }
+  if(tool === 'eyedropper'){
+    const px = Math.min(imgW - 1, Math.max(0, Math.floor(p.x * imgW)));
+    const py = Math.min(imgH - 1, Math.max(0, Math.floor(p.y * imgH)));
+    try{
+      const d = ectx.getImageData(px, py, 1, 1).data;
+      setColor({ r: d[0], g: d[1], b: d[2] });
+      setStatus(`Picked rgb(${d[0]}, ${d[1]}, ${d[2]}) from the shot — that's your working color now.`);
+    }catch(e){ setStatus('Could not sample that pixel.'); }
+    tool = 'select';
+    updateToolHint('select');
+    document.querySelectorAll('#tools button[data-tool]').forEach(x =>
+      x.classList.toggle('active', x.dataset.tool === 'select'));
+    return;
+  }
   if(tool === 'step'){
     const n = doc.primitives.filter(q => q.kind.type === 'step_badge').length + 1;
     addPrim({ type:'step_badge', at:p }).then(() =>
@@ -570,11 +1138,28 @@ overlay.addEventListener('pointerdown', ev => {
     return;
   }
   if(tool === 'stamp'){
+    if(curStamp === 'datetime'){
+      // The film-processing imprint: burnt-orange, set in the moment.
+      const now = new Date();
+      const MON = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+      let hh = now.getHours();
+      const ap = hh >= 12 ? 'PM' : 'AM';
+      hh = hh % 12 || 12;
+      const text = `${MON[now.getMonth()]} ${now.getDate()} ${now.getFullYear()}  ${hh}:${String(now.getMinutes()).padStart(2, '0')} ${ap}`;
+      addPrim({ type:'text', at:p, text },
+        { stroke: { r:255, g:140, b:26, a:255 }, stroke_width: 0.003, fill: null, font_size: 0.032 });
+      return;
+    }
     addPrim({ type:'stamp', at:p, stamp_id: curStamp, scale: 0.09 }, strokeStyle());
     return;
   }
   if(tool === 'pen'){
     drag = { mode:'pen', points:[p] };
+    return;
+  }
+  if(tool === 'highlight'){
+    // A highlighter is a PEN — it collects a path, never a box.
+    drag = { mode:'highlight', points:[p] };
     return;
   }
   drag = { mode:'create', start:p, cur:p };
@@ -608,8 +1193,50 @@ overlay.addEventListener('pointermove', ev => {
     drawStepGhost(p);
     return;
   }
+  if(!drag && tool === 'document' && docCorners){
+    if(docCorners.length < 4){ docHover = normPos(ev); drawOverlay(); }
+    return;
+  }
   if(!drag) return;
   const p = normPos(ev);
+  if(['create', 'resize', 'doccorner', 'bend'].includes(drag.mode)) showLoupe(p);
+  if(drag.mode === 'doccorner'){
+    docCorners[drag.idx] = p;
+    drawOverlay();
+    return;
+  }
+  if(drag.mode === 'bend'){
+    // bend = how far the pointer sits off the chord, along the
+    // chord's normal, as a fraction of the chord length (pixel space).
+    const fx = drag.from.x * imgW, fy = drag.from.y * imgH;
+    const tx = drag.to.x * imgW, ty = drag.to.y * imgH;
+    const dx = tx - fx, dy = ty - fy;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+    const mx = (fx + tx) / 2, my = (fy + ty) / 2;
+    const off = ((p.x * imgW - mx) * nx + (p.y * imgH - my) * ny) / len;
+    // The apex sits at HALF the control offset: dragging the apex
+    // handle means bend = 2 × the apex's off-chord distance.
+    drag.cur = Math.max(-1.2, Math.min(1.2, off * 2));
+    previewBend = drag.cur;
+    drawOverlay();
+    setStatus(`Bend: ${Math.round(drag.cur * 100)}% — release to set, double-click the arrow to straighten`);
+    return;
+  }
+  if(drag.mode === 'rotate'){
+    // Pixel-space angle: normalized atan2 made rotation lag and surge
+    // on non-square screenshots (Dickles' "not working correctly").
+    const ang = Math.atan2((p.y - drag.center.y) * imgH, (p.x - drag.center.x) * imgW);
+    let deg = drag.orig + (ang - drag.startAng) * 180 / Math.PI;
+    deg = ((deg % 360) + 360) % 360;
+    if(ev.shiftKey) deg = Math.round(deg / 45) * 45 % 360;
+    else { const s15 = Math.round(deg / 15) * 15; if(Math.abs(deg - s15) <= 4) deg = s15 % 360; }
+    drag.cur = deg;
+    previewRot = deg;
+    drawOverlay();
+    setStatus(`Rotating: ${Math.round(deg)}° — Shift snaps to 45°, gentle magnetism at 15°`);
+    return;
+  }
   if(drag.mode === 'resize'){
     const dx = p.x - drag.start.x, dy = p.y - drag.start.y;
     const o = drag.orig;
@@ -636,6 +1263,22 @@ overlay.addEventListener('pointermove', ev => {
     octx.strokeStyle = css(curColor); octx.lineWidth = Math.max(1.5, 0.004*imgW);
     octx.beginPath();
     drag.points.forEach((pt, i) => { if(i===0) octx.moveTo(pt.x*imgW, pt.y*imgH); else octx.lineTo(pt.x*imgW, pt.y*imgH); });
+    octx.stroke();
+    octx.restore();
+    return;
+  }
+  if(drag.mode === 'highlight'){
+    const last = drag.points[drag.points.length-1];
+    if(Math.hypot(p.x-last.x, p.y-last.y) > 0.003) drag.points.push(p);
+    drawOverlay();
+    octx.save();
+    octx.globalAlpha = 0.45;
+    octx.strokeStyle = css(curColor);
+    octx.lineWidth = Math.max(10, Math.min(160, weightFrac*imgW*4));
+    octx.lineCap = 'round'; octx.lineJoin = 'round';
+    octx.beginPath();
+    drag.points.forEach((pt, i) => { if(i===0) octx.moveTo(pt.x*imgW, pt.y*imgH); else octx.lineTo(pt.x*imgW, pt.y*imgH); });
+    if(drag.points.length === 1) octx.lineTo(drag.points[0].x*imgW + 0.01, drag.points[0].y*imgH);
     octx.stroke();
     octx.restore();
     return;
@@ -676,10 +1319,43 @@ overlay.addEventListener('pointermove', ev => {
 });
 overlay.addEventListener('pointerleave', () => { if(!drag) drawOverlay(); });
 overlay.addEventListener('pointerup', async ev => {
+  hideLoupe();
   if(!drag) return;
   const p = normPos(ev);
+  if(drag.mode === 'bend'){
+    const bend = drag.cur;
+    drag = null;
+    previewBend = null;
+    hideLoupe();
+    try{ await invoke('set_bend', { id: selectedId, bend }); }
+    catch(e){ setStatus('Bend failed: ' + e); }
+    await refresh();
+    setStatus(Math.abs(bend) < 0.02 ? 'Arrow straightened.' : `Arrow bent ${Math.round(bend * 100)}%.`);
+    return;
+  }
+  if(drag.mode === 'rotate'){
+    const deg = drag.cur;
+    drag = null;
+    previewRot = null;
+    try{ await invoke('rotate_primitive', { id: selectedId, deg }); }
+    catch(e){ setStatus('Rotate failed: ' + e); }
+    await refresh();
+    setStatus(`Stamp rotated to ${Math.round(deg)}°.`);
+    return;
+  }
+  if(drag.mode === 'doccorner'){
+    drag = null;
+    drawOverlay();
+    return;
+  }
   if(drag.mode === 'pen'){
     if(drag.points.length >= 2) await addPrim({ type:'freehand', points: drag.points }, strokeStyle());
+    drag = null;
+    drawOverlay();
+    return;
+  }
+  if(drag.mode === 'highlight'){
+    if(drag.points.length >= 1) await addPrim({ type:'highlight', points: drag.points }, strokeStyle());
     drag = null;
     drawOverlay();
     return;
@@ -709,14 +1385,13 @@ overlay.addEventListener('pointerup', async ev => {
     else if(tool === 'line'){ const to = snap45(s, p, ev.shiftKey); if(Math.abs(to.x-s.x)>0.005||Math.abs(to.y-s.y)>0.005) await addPrim({ type:'line', from:s, to }, strokeStyle()); }
     else if(tool === 'rect'){ if(rect.w>0.005&&rect.h>0.005) await addPrim({ type:'rect', rect, corner_radius:0.01 }, strokeStyle()); }
     else if(tool === 'ellipse'){ if(rect.w>0.005&&rect.h>0.005) await addPrim({ type:'ellipse', rect }, strokeStyle()); }
-    else if(tool === 'highlight'){ if(rect.w>0.005&&rect.h>0.005) await addPrim({ type:'highlight', rect }, strokeStyle()); }
     else if(tool === 'spotlight'){ if(rect.w>0.005&&rect.h>0.005) await addPrim({ type:'spotlight', rect }); }
     else if(tool === 'callout'){
       const t = prompt('Callout text:');
       if(t) await addPrim({ type:'callout', at:p, tail:s, text:t }, { stroke: curColor, stroke_width:0.004, fill:null, font_size:0.045 });
     }
-    else if(tool === 'blur'){ if(rect.w>0.005&&rect.h>0.005) await addPrim({ type:'blur', rect }); }
-    else if(tool === 'pixelate'){ if(rect.w>0.005&&rect.h>0.005) await addPrim({ type:'pixelate', rect }); }
+    else if(tool === 'blur'){ if(rect.w>0.005&&rect.h>0.005) await addPrim({ type:'blur', rect }, strokeStyle()); }
+    else if(tool === 'pixelate'){ if(rect.w>0.005&&rect.h>0.005) await addPrim({ type:'pixelate', rect }, strokeStyle()); }
   } else if(drag.mode === 'move' && drag.delta && (Math.abs(drag.delta.x)>0.001 || Math.abs(drag.delta.y)>0.001)){
     await invoke('move_primitive', { id: selectedId, dx: drag.delta.x, dy: drag.delta.y });
     await refresh();
@@ -733,6 +1408,8 @@ async function addPrim(kind, style){
 
 async function refresh(){
   doc = await invoke('get_doc');
+  const ot = document.getElementById('ocrText');
+  if(ot && doc && typeof doc.ocr_text === 'string') ot.value = doc.ocr_text;
   drawOverlay();
   await drawPreview();
   await syncUndoButtons();
@@ -784,11 +1461,116 @@ async function doRedo(){
 document.getElementById('btnUndo').addEventListener('click', doUndo);
 document.getElementById('btnRedo').addEventListener('click', doRedo);
 
+// ---------- document straightener ----------
+async function startDocumentFlow(){
+  if(!doc){ setStatus('Capture or open a photo of the document first.'); return; }
+  setStatus('Looking for the document…');
+  try{
+    const res = await invoke('detect_document');
+    if(res.found){
+      docCorners = res.corners.map(([x, y]) => ({ x, y }));
+      document.getElementById('docbar').classList.add('show');
+      setStatus('Found it. Drag any corner to fine-tune, then straighten.');
+    } else {
+      docCorners = [];
+      setStatus("Couldn't spot a document in this shot — tap its 4 corners in order (top-left first, then clockwise).");
+    }
+  }catch(e){
+    docCorners = [];
+    setStatus('Detection unavailable — tap the 4 corners instead.');
+  }
+  drawOverlay();
+}
+function cancelDocument(){
+  docCorners = null;
+  document.getElementById('docbar').classList.remove('show');
+  drawOverlay();
+  setStatus('Document mode cancelled.');
+}
+async function doStraighten(aspect){
+  if(!docCorners || docCorners.length !== 4) return;
+  try{
+    const res = await invoke('straighten_document', {
+      corners: docCorners.map(c => [c.x, c.y]),
+      aspect
+    });
+    imgW = res.width; imgH = res.height;
+    selectedId = null;
+    docCorners = null;
+    document.getElementById('docbar').classList.remove('show');
+    doc = await invoke('get_doc');
+    await drawEditor();
+    await drawPreview();
+    await syncUndoButtons();
+    setStatus(`Straightened to ${res.width}×${res.height}. Ctrl+Z brings the photo back if you hate it.`);
+  }catch(e){ setStatus('Straighten failed: ' + e); }
+}
+document.getElementById('btnDocAuto').addEventListener('click', () => doStraighten(null));
+document.getElementById('btnDocId').addEventListener('click', () => doStraighten(1.586));
+document.getElementById('btnDocPassport').addEventListener('click', () => doStraighten(1.42));
+document.getElementById('btnDocCancel').addEventListener('click', cancelDocument);
+
+// ---------- preferences & factory reset ----------
+async function refreshSaveDirInfo(){
+  try{
+    const info = await invoke('save_dir_info');
+    document.getElementById('saveDirEffective').textContent = 'Saving to: ' + info.effective;
+  }catch(e){ /* settings unavailable */ }
+}
+async function saveSaveDir(value){
+  try{
+    await invoke('save_settings', { settings: { save_dir: value } });
+    await refreshSaveDirInfo();
+    await loadLibrary();
+    setStatus(value ? `Save folder set to ${value}.` : 'Save folder reset to the default.');
+  }catch(e){ setStatus('Save folder failed: ' + e); }
+}
+document.getElementById('btnSaveDir').addEventListener('click', () =>
+  saveSaveDir(document.getElementById('saveDirInput').value.trim()));
+document.getElementById('btnSaveDirDefault').addEventListener('click', () => {
+  document.getElementById('saveDirInput').value = '';
+  saveSaveDir('');
+});
+document.getElementById('btnFactoryReset').addEventListener('click', async () => {
+  if(!confirm('Reset Screensnips to factory defaults? Pictures are not touched. Old settings are kept as backups.')) return;
+  try{
+    const res = await invoke('reset_factory');
+    if(backendDd) backendDd.set('auto');
+    if(retentionDd) retentionDd.set('0');
+    document.getElementById('backendNote').textContent = BACKEND_NOTES.auto;
+    document.getElementById('saveDirInput').value = '';
+    await refreshSaveDirInfo();
+    await loadPresets();
+    await loadLibrary();
+    localStorage.removeItem('ss_intro_dismissed');
+    document.getElementById('banner').classList.add('show');
+    // panel defaults
+    delayVal = '0';
+    document.querySelectorAll('#delayMenu button').forEach(x =>
+      x.classList.toggle('active', x.dataset.val === '0'));
+    document.getElementById('delayLabel').textContent = 'No delay';
+    bgKey = 'indigo'; customBg = null; syncBgUi('indigo');
+    frameVal = 'none'; if(effectDd) effectDd.set('none');
+    aspectVal = ''; if(aspectDd) aspectDd.set('');
+    document.getElementById('padLink').checked = true;
+    for(const id of ['pad','padTop','padRight','padBottom','padLeft'])
+      document.getElementById(id).value = 0.06;
+    document.getElementById('rad').value = 0.012;
+    document.getElementById('shadow').checked = true;
+    shadowCfg = { blur: 0.03, offset_y: 0.012, opacity: 0.35 };
+    await pushBeautify();
+    setStatus(`Factory defaults restored (${res.cleared.length} settings file(s) set aside, ${res.preset_count} starter presets).`);
+  }catch(e){ setStatus('Factory reset failed: ' + e); }
+});
+
 document.getElementById('tools').addEventListener('click', ev => {
   const b = ev.target.closest('button[data-tool]');
   if(!b) return;
   tool = b.dataset.tool;
+  updateToolHint(tool);
   pendingCrop = null;
+  if(tool === 'document') startDocumentFlow();
+  else if(docCorners){ docCorners = null; document.getElementById('docbar').classList.remove('show'); }
   document.querySelectorAll('#tools button[data-tool]').forEach(x => x.classList.toggle('active', x === b));
   document.querySelectorAll('#stamps button').forEach(x => x.classList.remove('active'));
   drawOverlay();
@@ -798,21 +1580,36 @@ document.getElementById('stamps').addEventListener('click', ev => {
   if(!b) return;
   curStamp = b.dataset.stamp;
   tool = 'stamp';
+  updateToolHint('stamp');
   pendingCrop = null;
   document.querySelectorAll('#tools button[data-tool]').forEach(x => x.classList.remove('active'));
   document.querySelectorAll('#stamps button').forEach(x => x.classList.toggle('active', x === b));
   setStatus('Stamp armed: ' + b.title + ' — click the shot to place it.');
 });
+function setColor(c, fromSwatch){
+  curColor = { r: c.r, g: c.g, b: c.b, a: 255 };
+  const hex = '#' + [c.r, c.g, c.b].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+  document.getElementById('curChip').style.background = `rgb(${c.r},${c.g},${c.b})`;
+  document.getElementById('curHex').textContent = hex;
+  document.getElementById('colorInput').value = hex;
+  if(!fromSwatch)
+    document.querySelectorAll('#swatches .swatch[data-color]').forEach(x => x.classList.remove('active'));
+}
 document.getElementById('swatches').addEventListener('click', ev => {
   const b = ev.target.closest('button[data-color]');
   if(!b) return;
   const parts = b.dataset.color.split(',').map(Number);
-  curColor = { r: parts[0], g: parts[1], b: parts[2], a: 255 };
   document.querySelectorAll('#swatches .swatch').forEach(x => x.classList.toggle('active', x === b));
+  setColor({ r: parts[0], g: parts[1], b: parts[2] }, true);
+});
+document.getElementById('colorInput').addEventListener('input', ev => {
+  const v = ev.target.value;
+  setColor({ r: parseInt(v.slice(1, 3), 16), g: parseInt(v.slice(3, 5), 16), b: parseInt(v.slice(5, 7), 16) });
 });
 document.addEventListener('keydown', async ev => {
   const tag = (ev.target.tagName || '').toLowerCase();
   if(tag === 'input' || tag === 'select' || tag === 'textarea') return;
+  if(docCorners && ev.key === 'Escape'){ cancelDocument(); return; }
   if(pendingCrop){
     if(ev.key === 'Escape'){
       pendingCrop = null;
@@ -851,6 +1648,17 @@ document.addEventListener('keydown', async ev => {
     await doRedo();
     return;
   }
+  if(selectedId != null && (ev.key === '[' || ev.key === ']')){
+    const prim = doc?.primitives.find(q => q.id === selectedId);
+    if(prim && prim.kind.type === 'stamp'){
+      ev.preventDefault();
+      const stepDeg = (ev.shiftKey ? 15 : 5) * (ev.key === ']' ? 1 : -1);
+      const deg = (((prim.kind.rotation_deg || 0) + stepDeg) % 360 + 360) % 360;
+      try{ await invoke('rotate_primitive', { id: selectedId, deg }); await refresh(); }
+      catch(e){ setStatus('Rotate failed: ' + e); }
+      return;
+    }
+  }
   if(selectedId != null && ev.key.startsWith('Arrow') && imgW){
     ev.preventDefault();
     const step = ev.shiftKey ? 10 : 1;
@@ -877,18 +1685,25 @@ const BGS = {
   blurred:{ type:'blurred_screenshot' }
 };
 const $ = id => document.getElementById(id);
+document.getElementById('weight').addEventListener('input', ev => {
+  const v = parseInt(ev.target.value, 10);
+  weightFrac = v / 10000;
+  document.getElementById('weightVal').textContent =
+    v < 28 ? 'fine' : v < 58 ? 'medium' : v < 90 ? 'bold' : 'extra bold';
+});
 function readBeautify(){
   const linked = $('padLink').checked;
   const padding = linked
     ? { linked:true, top:parseFloat($('pad').value), right:parseFloat($('pad').value), bottom:parseFloat($('pad').value), left:parseFloat($('pad').value) }
     : { linked:false, top:parseFloat($('padTop').value), right:parseFloat($('padRight').value), bottom:parseFloat($('padBottom').value), left:parseFloat($('padLeft').value) };
-  const asp = $('aspect').value;
+  const asp = aspectVal;
   return {
     background: customBg ?? BGS[bgKey],
     padding,
     corner_radius: parseFloat($('rad').value),
     shadow: { enabled: $('shadow').checked, blur: shadowCfg.blur, offset_y: shadowCfg.offset_y, opacity: shadowCfg.opacity },
     aspect: asp === '' ? null : parseFloat(asp),
+    frame: frameVal,
     crop: null
   };
 }
@@ -925,10 +1740,13 @@ function applyBeautify(b){
   $('rad').value = b.corner_radius;
   $('shadow').checked = b.shadow.enabled;
   shadowCfg = { blur: b.shadow.blur, offset_y: b.shadow.offset_y, opacity: b.shadow.opacity };
-  $('aspect').value = b.aspect == null ? '' : String(b.aspect);
+  aspectVal = b.aspect == null ? '' : String(b.aspect);
+  if(aspectDd) aspectDd.set(aspectVal);
+  frameVal = b.frame || 'none';
+  if(effectDd) effectDd.set(frameVal);
   syncLabels();
 }
-for(const id of ['pad','padTop','padRight','padBottom','padLeft','padLink','rad','shadow','aspect'])
+for(const id of ['pad','padTop','padRight','padBottom','padLeft','padLink','rad','shadow'])
   $(id).addEventListener('input', pushBeautify);
 const bgMenuEl = document.getElementById('bgMenu');
 // A desktop app is not a web page: kill the browser's Back/Forward/Reload
@@ -952,22 +1770,67 @@ bgMenuEl.addEventListener('click', async ev => {
   await pushBeautify();
 });
 
+// Generic themed dropdown (native <select> renders unreadable in the
+// webview — white box, invisible text — so EVERY picker uses this now).
+function wireDropdown(rootId, buttonId, menuId, labelId, onPick){
+  const root = document.getElementById(rootId);
+  const menu = document.getElementById(menuId);
+  const label = document.getElementById(labelId);
+  document.getElementById(buttonId).addEventListener('click', ev => {
+    ev.stopPropagation();
+    menu.hidden = !menu.hidden;
+  });
+  document.addEventListener('click', ev => {
+    if(!root.contains(ev.target)) menu.hidden = true;
+  });
+  menu.addEventListener('click', ev => {
+    const b = ev.target.closest('button[data-val]');
+    if(!b) return;
+    menu.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+    label.textContent = b.textContent.replace(/^✓\s*/, '');
+    menu.hidden = true;
+    onPick(b.dataset.val);
+  });
+  return {
+    set(val){
+      const b = [...menu.querySelectorAll('button[data-val]')]
+        .find(x => x.dataset.val === String(val));
+      menu.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+      if(b) label.textContent = b.textContent.replace(/^✓\s*/, '');
+    }
+  };
+}
+wireDropdown('delayDropdown', 'delayButton', 'delayMenu', 'delayLabel',
+  v => { delayVal = v; });
+aspectDd = wireDropdown('aspectDropdown', 'aspectButton', 'aspectMenu', 'aspectLabel',
+  v => { aspectVal = v; pushBeautify(); });
+effectDd = wireDropdown('effectDropdown', 'effectButton', 'effectMenu', 'effectLabel',
+  v => { frameVal = v; pushBeautify(); });
+presetDd = wireDropdown('presetDropdown', 'presetButton', 'presetMenu', 'presetLabel',
+  v => { presetName = v; });
+
 let presetsCache = [];
 function fillPresets(sel){
-  const s = $('presetSel');
-  s.innerHTML = '';
+  const menu = $('presetMenu');
+  menu.innerHTML = '';
   for(const p of presetsCache){
-    const o = document.createElement('option');
-    o.value = p.name; o.textContent = p.name;
-    s.appendChild(o);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.val = p.name;
+    b.textContent = p.name;
+    menu.appendChild(b);
   }
-  if(sel && presetsCache.some(p => p.name === sel)) s.value = sel;
+  if(sel && presetsCache.some(p => p.name === sel)) presetName = sel;
+  else if(!presetsCache.some(p => p.name === presetName))
+    presetName = presetsCache.length ? presetsCache[0].name : '';
+  if(presetDd) presetDd.set(presetName);
+  if(!presetsCache.length) $('presetLabel').textContent = 'No presets yet';
 }
 async function loadPresets(){
   try{ presetsCache = await invoke('get_presets'); fillPresets(); }catch(e){ /* presets unavailable */ }
 }
 $('btnPresetApply').addEventListener('click', async () => {
-  const p = presetsCache.find(x => x.name === $('presetSel').value);
+  const p = presetsCache.find(x => x.name === presetName);
   if(!p) return;
   applyBeautify(p.beautify);
   await pushBeautify();
@@ -983,7 +1846,7 @@ $('btnPresetSave').addEventListener('click', async () => {
   }catch(e){ setStatus('Preset save failed: ' + e); }
 });
 $('btnPresetDelete').addEventListener('click', async () => {
-  const name = $('presetSel').value;
+  const name = presetName;
   if(!name) return;
   try{
     presetsCache = await invoke('delete_preset', { name });
@@ -993,32 +1856,45 @@ $('btnPresetDelete').addEventListener('click', async () => {
 });
 
 async function doCapture(interactive){
-  const delay = parseInt($('delaySel').value, 10) || 0;
+  const delay = parseInt(delayVal, 10) || 0;
+  // A delay only makes sense as a MENU GRAB: count down, then take the
+  // whole screen with NO picker — a picker would dismiss the very menu
+  // you're trying to catch. Crop to the menu afterwards in the editor.
+  const menuMode = interactive && delay > 0;
+  const useInteractive = interactive && !menuMode;
   try{
     if(delay > 0){
       for(let s = delay; s > 0; s--){
-        setStatus(`Capturing in ${s}… arrange your windows.`);
+        setStatus(menuMode
+          ? `Menu grab in ${s}… open the menu NOW and leave it open.`
+          : `Capturing in ${s}… arrange your windows.`);
         await sleep(1000);
       }
     }
-    setStatus(interactive
+    setStatus(useInteractive
       ? 'Opening the system screenshot picker — frame your shot, then it lands here…'
       : 'Grabbing the full screen…');
-    const res = await invoke('capture', { interactive });
+    const res = await invoke('capture', { interactive: useInteractive });
     imgW = res.width; imgH = res.height;
     selectedId = null; pendingCrop = null;
     doc = await invoke('get_doc');
     await drawEditor();
     await drawPreview();
-    $('quickbar').classList.add('show');
-    setStatus(`Captured ${res.width}×${res.height} — ${res.path}`);
+    showQuick();
+    setStatus(menuMode
+      ? `Menu grab done — full screen captured. Use ✂ Crop to cut it down to the menu.`
+      : `Captured ${res.width}×${res.height} — ${res.path}`);
   }catch(e){ setStatus('Capture failed: ' + e); }
 }
 document.getElementById('btnCapture').addEventListener('click', () => doCapture(true));
 document.getElementById('btnInstant').addEventListener('click', () => doCapture(false));
+function shotNameVal(){
+  const v = document.getElementById('shotName').value.trim();
+  return v ? v : null;
+}
 async function doExportPng(){
   try{
-    const path = await invoke('export_png');
+    const path = await invoke('export_png', { name: shotNameVal() });
     setStatus('Exported → ' + path + ' (source shot + annotation sidecar saved with it)');
     await loadLibrary();
   }catch(e){ setStatus('Export failed: ' + e); }
@@ -1032,18 +1908,57 @@ async function doCopy(){
 }
 document.getElementById('btnCopy').addEventListener('click', doCopy);
 $('btnQCopy').addEventListener('click', doCopy);
+$('quickScrim').addEventListener('click', hideQuick);
 $('btnQDiscard').addEventListener('click', async () => {
   try{ await invoke('clear_session'); }catch(e){ /* nothing to clear */ }
   doc = null; imgW = 0; imgH = 0; selectedId = null; pendingCrop = null;
   ectx.clearRect(0, 0, editCanvas.width, editCanvas.height);
   octx.clearRect(0, 0, overlay.width, overlay.height);
   pctx.clearRect(0, 0, preview.width, preview.height);
-  $('quickbar').classList.remove('show');
+  hideQuick();
   setStatus('Discarded. Nothing was saved.');
+});
+document.getElementById('btnAutoBalance').addEventListener('click', async () => {
+  if(!doc){ setStatus('Nothing to balance yet — capture something first.'); return; }
+  // 1. Background: the average color along the shot's own edges.
+  try{
+    const pts = [[2, 2], [imgW - 3, 2], [2, imgH - 3], [imgW - 3, imgH - 3],
+                 [Math.floor(imgW / 2), 2], [Math.floor(imgW / 2), imgH - 3]];
+    let r = 0, g = 0, b = 0;
+    for(const [x, y] of pts){
+      const d = ectx.getImageData(Math.max(0, Math.min(imgW - 1, x)), Math.max(0, Math.min(imgH - 1, y)), 1, 1).data;
+      r += d[0]; g += d[1]; b += d[2];
+    }
+    r = Math.round(r / pts.length); g = Math.round(g / pts.length); b = Math.round(b / pts.length);
+    // Darken the sample a touch so the shot sits ON it, not in it.
+    const dk = v => Math.max(0, Math.round(v * 0.82));
+    customBg = { type: 'solid', color: { r: dk(r), g: dk(g), b: dk(b), a: 255 } };
+    bgKey = 'custom';
+    syncBgUi(null);
+  }catch(e){ /* sampling is best-effort; defaults below still apply */ }
+  // 2. Balanced padding + friendly shape + the house shadow.
+  document.getElementById('padLink').checked = true;
+  document.getElementById('pad').value = 0.07;
+  document.getElementById('rad').value = 0.014;
+  document.getElementById('shadow').checked = true;
+  shadowCfg = { blur: 0.03, offset_y: 0.012, opacity: 0.35 };
+  const shotAspect = imgW / Math.max(1, imgH);
+  const candidates = [['', shotAspect], ['1.7777778', 16 / 9], ['1', 1], ['0.8', 4 / 5], ['1.91', 1.91]];
+  let best = '', bestDiff = Infinity;
+  for(const [val, ratio] of candidates){
+    const d = Math.abs(Math.log(ratio / shotAspect));
+    if(d < bestDiff){ bestDiff = d; best = val; }
+  }
+  aspectVal = best;
+  if(aspectDd) aspectDd.set(best);
+  syncLabels();
+  await pushBeautify();
+  setStatus('Auto-balanced: edge-sampled background, 7% padding, ' +
+    (best ? 'canvas shaped to the nearest friendly ratio.' : 'canvas kept at the shot’s own shape.'));
 });
 $('btnExportFmt').addEventListener('click', async () => {
   try{
-    const path = await invoke('export_image', { format: $('fmtSel').value, scale: parseInt($('scaleSel').value, 10) });
+    const path = await invoke('export_image', { format: fmtVal, scale: parseInt(scaleVal, 10), name: shotNameVal() });
     setStatus('Exported → ' + path + ' (source shot + annotation sidecar saved with it)');
     await loadLibrary();
   }catch(e){ setStatus('Export failed: ' + e); }
@@ -1066,14 +1981,39 @@ const BACKEND_NOTES = {
   wlroots: 'Not built yet in this version — a capture will say so honestly instead of failing silently.',
   x11: 'Not built yet in this version — a capture will say so honestly instead of failing silently.'
 };
-$('backendSel').addEventListener('change', async () => {
-  const backend = $('backendSel').value;
-  $('backendNote').textContent = BACKEND_NOTES[backend] || BACKEND_NOTES.auto;
+wireDropdown('fmtDropdown', 'fmtButton', 'fmtMenu', 'fmtLabel',
+  v => { fmtVal = v; });
+let retentionDays = 0;
+const retentionDd = wireDropdown('retentionDropdown', 'retentionButton', 'retentionMenu', 'retentionLabel',
+  async v => {
+    retentionDays = parseInt(v, 10) || 0;
+    try{
+      await invoke('save_settings', { settings: { retention_days: retentionDays } });
+      setStatus(retentionDays
+        ? `Auto-delete on: shots older than ${retentionDays} days are swept at startup.`
+        : 'Auto-delete off — shots live forever.');
+    }catch(e){ setStatus('Retention save failed: ' + e); }
+  });
+document.getElementById('btnSweep').addEventListener('click', async () => {
   try{
-    await invoke('save_settings', { settings: { backend } });
-    setStatus('Capture backend: ' + backend + ' (applies to the next capture).');
-  }catch(e){ setStatus('Settings save failed: ' + e); }
+    const res = await invoke('library_sweep');
+    if(!res.retention_days){ setStatus('Auto-delete is off (set to Never) — nothing swept.'); return; }
+    await loadLibrary();
+    setStatus(res.deleted
+      ? `Swept ${res.deleted} old shot(s) — ${(res.bytes_freed / 1048576).toFixed(1)} MB freed.`
+      : 'Sweep done — nothing old enough to remove.');
+  }catch(e){ setStatus('Sweep failed: ' + e); }
 });
+wireDropdown('scaleDropdown', 'scaleButton', 'scaleMenu', 'scaleLabel',
+  v => { scaleVal = v; });
+backendDd = wireDropdown('backendDropdown', 'backendButton', 'backendMenu', 'backendLabel',
+  async backend => {
+    $('backendNote').textContent = BACKEND_NOTES[backend] || BACKEND_NOTES.auto;
+    try{
+      await invoke('save_settings', { settings: { backend } });
+      setStatus('Capture backend: ' + backend + ' (applies to the next capture).');
+    }catch(e){ setStatus('Settings save failed: ' + e); }
+  });
 async function loadDiag(){
   try{
     const facts = await invoke('diag_info');
@@ -1097,41 +2037,359 @@ async function fetchThumb(path){
   return new ImageData(new Uint8ClampedArray(buf.buffer, buf.byteOffset, w*h*4), w, h);
 }
 
+function libDayLabel(unix){
+  const d = new Date(unix * 1000);
+  const now = new Date();
+  const startOf = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((startOf(now) - startOf(d)) / 86400000);
+  if(days <= 0) return 'Today';
+  if(days === 1) return 'Yesterday';
+  if(days < 7) return d.toLocaleDateString([], { weekday: 'long' });
+  if(d.getFullYear() === now.getFullYear())
+    return d.toLocaleDateString([], { month: 'long' });
+  return d.toLocaleDateString([], { month: 'long', year: 'numeric' });
+}
+function libTitle(unix){
+  const d = new Date(unix * 1000);
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' · ' +
+    d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+function libDisplayName(c){
+  const base = c.file_name.replace(/\.shot\.png$/i, '').replace(/\.(png|jpg|webp)$/i, '');
+  if(/^screensnip-\d+$/.test(base)) return null; // unnamed → the date is the title
+  return base;
+}
+
+let libCards = [];
 async function loadLibrary(){
   const list = document.getElementById('libList');
-  let entries = [];
-  try{ entries = await invoke('library_list'); }catch(e){ /* library unavailable */ }
+  try{ libCards = await invoke('library_list'); }catch(e){ libCards = []; }
+  renderLibrary();
+}
+function renderLibrary(){
+  const list = document.getElementById('libList');
+  const q = (document.getElementById('libSearch').value || '').trim().toLowerCase();
   list.innerHTML = '';
-  if(!entries.length){
-    list.innerHTML = '<div class="lib-empty">Nothing yet. Export a shot and it lives here — reopen any entry to keep editing it.</div>';
+  const cards = libCards.filter(c => {
+    if(!q) return true;
+    const hay = (libTitle(c.modified_unix) + ' ' + libDayLabel(c.modified_unix) + ' ' + c.file_name + ' ' + libDisplayName(c) + ' ' + (c.ocr_text || '')).toLowerCase();
+    return hay.includes(q);
+  });
+  document.getElementById('libCount').textContent =
+    libCards.length ? `${cards.length} of ${libCards.length} shot${libCards.length === 1 ? '' : 's'}` : '';
+  if(!cards.length){
+    list.innerHTML = `<div class="lib-empty">${libCards.length
+      ? 'No shots match that search.'
+      : 'Nothing yet. Export a shot and it lives here — reopen any entry to keep editing it.'}</div>`;
     return;
   }
-  for(const e of entries){
-    const name = e.shot_path.split('/').pop();
+  let lastDay = null;
+  for(const e of cards){
+    const day = libDayLabel(e.modified_unix);
+    if(day !== lastDay){
+      lastDay = day;
+      const h = document.createElement('div');
+      h.className = 'lib-day';
+      h.textContent = day;
+      list.appendChild(h);
+    }
     const btn = document.createElement('button');
     btn.className = 'lib-entry';
+    btn.title = e.file_name;
     const cv = document.createElement('canvas');
     cv.width = 200; cv.height = 90;
     btn.appendChild(cv);
     const nm = document.createElement('div');
-    nm.className = 'lib-name'; nm.textContent = name;
+    nm.className = 'lib-name';
+    const niceName = libDisplayName(e);
+    nm.textContent = niceName || libTitle(e.modified_unix);
     btn.appendChild(nm);
     const meta = document.createElement('div');
     meta.className = 'lib-meta';
     const dims = e.width ? `${e.width}×${e.height}` : 'image';
-    const ann = e.sidecar_path
+    const ann = e.has_sidecar
       ? (e.sidecar_ok ? `${e.primitive_count} annotation${e.primitive_count === 1 ? '' : 's'}` : '⚠ sidecar unreadable')
       : 'no annotations';
-    meta.textContent = `${dims} · ${ann}`;
+    meta.textContent = (niceName ? libTitle(e.modified_unix) + ' · ' : '') + `${dims} · ${ann}`;
+    if(e.export_path){
+      const badge = document.createElement('span');
+      badge.className = 'lib-badge';
+      badge.textContent = 'export ⤓';
+      badge.title = 'Open the flattened export (annotations baked in)';
+      badge.addEventListener('click', ev => { ev.stopPropagation(); openEntry(e.export_path); });
+      meta.appendChild(badge);
+    }
+    {
+      const ren = document.createElement('span');
+      ren.className = 'lib-badge';
+      ren.textContent = '✎ name';
+      ren.title = 'Rename this shot (files, sidecar and export move together)';
+      ren.addEventListener('click', ev => { ev.stopPropagation(); renameCard(e); });
+      meta.appendChild(ren);
+    }
     btn.appendChild(meta);
     btn.addEventListener('click', () => openEntry(e.shot_path));
+    btn.addEventListener('contextmenu', ev => {
+      ev.preventDefault();
+      showCtx(e, ev.clientX, ev.clientY);
+    });
     list.appendChild(btn);
-    fetchThumb(e.shot_path).then(img => {
+    fetchThumb(e.export_path || e.shot_path).then(img => {
       cv.width = img.width; cv.height = img.height;
       cv.getContext('2d').putImageData(img, 0, 0);
     }).catch(() => {});
   }
 }
+document.getElementById('libSearch').addEventListener('input', renderLibrary);
+
+// ---------- library management: rename, delete, right-click menu ----------
+async function renameCard(card){
+  const nn = prompt('Name this shot:', libDisplayName(card) || '');
+  if(nn === null || !nn.trim()) return;
+  try{
+    await invoke('rename_shot', { shotPath: card.shot_path, newName: nn });
+    await loadLibrary();
+    setStatus('Renamed to “' + nn.trim() + '”.');
+  }catch(err){ setStatus('Rename failed: ' + err); }
+}
+async function deleteCard(card){
+  const disp = libDisplayName(card) || card.file_name;
+  if(!confirm(`Delete “${disp}”?\nThe shot, its annotations, and its export are removed together. There is no undo.`)) return;
+  try{
+    const res = await invoke('delete_shot', { shotPath: card.shot_path });
+    await loadLibrary();
+    setStatus(`Deleted “${disp}” — ${res.files_removed} file(s), ${(res.bytes_freed / 1048576).toFixed(1)} MB freed.`);
+  }catch(e){ setStatus('Delete failed: ' + e); }
+}
+const ctxMenu = document.getElementById('ctxmenu');
+function hideCtx(){ ctxMenu.hidden = true; }
+function showCtx(card, x, y){
+  ctxMenu.innerHTML = '';
+  const mk = (label, fn, danger) => {
+    const b = document.createElement('button');
+    b.textContent = label;
+    if(danger) b.className = 'danger';
+    b.addEventListener('click', () => { hideCtx(); fn(); });
+    ctxMenu.appendChild(b);
+  };
+  mk('Open', () => openEntry(card.shot_path));
+  mk('✎ Rename…', () => renameCard(card));
+  if(card.export_path) mk('Open flattened export', () => openEntry(card.export_path));
+  mk('Read text (OCR)', () => ocrCard(card));
+  mk('🗑 Delete…', () => deleteCard(card), true);
+  ctxMenu.hidden = false;
+  ctxMenu.style.left = Math.min(x, window.innerWidth - 200) + 'px';
+  ctxMenu.style.top = Math.min(y, window.innerHeight - 170) + 'px';
+}
+document.addEventListener('pointerdown', ev => {
+  if(!ctxMenu.hidden && !ctxMenu.contains(ev.target)) hideCtx();
+});
+document.addEventListener('keydown', ev => { if(ev.key === 'Escape') hideCtx(); });
+
+// ---------- cleanup wizard ----------
+let wizSelection = new Set();
+function updateWizCount(){
+  document.getElementById('wizCount').textContent =
+    wizSelection.size ? `${wizSelection.size} shot(s) selected for deletion` : 'Nothing selected';
+  document.getElementById('btnWizDelete').disabled = wizSelection.size === 0;
+}
+async function openWizard(){
+  const wiz = document.getElementById('wizard');
+  const body = document.getElementById('wizBody');
+  wiz.hidden = false;
+  wizSelection = new Set();
+  updateWizCount();
+  document.getElementById('wizSummary').textContent = '';
+  body.innerHTML = '<div class="lib-empty">Scanning — decoding every shot to compare pixels…</div>';
+  let rep;
+  try{ rep = await invoke('library_analyze'); }
+  catch(e){ body.innerHTML = '<div class="lib-empty">Analysis failed: ' + e + '</div>'; return; }
+  document.getElementById('wizSummary').textContent = `${rep.total} shots scanned`;
+  body.innerHTML = '';
+  const cardByPath = {};
+  for(const c of libCards) cardByPath[c.shot_path] = c;
+  const groupBox = title => {
+    const box = document.createElement('div');
+    box.className = 'wiz-group';
+    const h = document.createElement('h4');
+    h.textContent = title;
+    box.appendChild(h);
+    body.appendChild(box);
+    return box;
+  };
+  const addItem = (box, path, checked, note) => {
+    const card = cardByPath[path];
+    const row = document.createElement('div');
+    row.className = 'wiz-item';
+    const cv = document.createElement('canvas');
+    cv.width = 200; cv.height = 90;
+    row.appendChild(cv);
+    const grow = document.createElement('div');
+    grow.className = 'grow';
+    const t = document.createElement('div');
+    t.textContent = card ? (libDisplayName(card) || libTitle(card.modified_unix)) : path.split('/').pop();
+    const n = document.createElement('div');
+    n.className = 'lib-meta';
+    n.textContent = note;
+    grow.appendChild(t); grow.appendChild(n);
+    row.appendChild(grow);
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = checked;
+    cb.title = 'Delete this shot';
+    if(checked) wizSelection.add(path);
+    cb.addEventListener('change', () => {
+      if(cb.checked) wizSelection.add(path); else wizSelection.delete(path);
+      updateWizCount();
+    });
+    row.appendChild(cb);
+    box.appendChild(row);
+    fetchThumb(path).then(img => {
+      cv.width = img.width; cv.height = img.height;
+      cv.getContext('2d').putImageData(img, 0, 0);
+    }).catch(() => {});
+  };
+  if(!rep.duplicates.length && !rep.near_duplicates.length && !rep.duds.length){
+    body.innerHTML = '<div class="lib-empty">Nothing flagged — no duplicates, no near-duplicates, no duds. A disgustingly tidy library.</div>';
+    return;
+  }
+  rep.duplicates.forEach(g => {
+    const box = groupBox(`Exact duplicates — ${g.length} identical copies`);
+    g.forEach((p, i) => addItem(box, p, i > 0, i === 0 ? 'suggested keeper' : 'same pixels as the keeper'));
+  });
+  rep.near_duplicates.forEach(g => {
+    const box = groupBox('Near-duplicates — same shot, slightly different pixels');
+    g.forEach((p, i) => addItem(box, p, i > 0, i === 0 ? 'suggested keeper' : 'looks the same as the keeper'));
+  });
+  if(rep.duds.length){
+    const box = groupBox('Possible duds');
+    rep.duds.forEach(d => addItem(box, d.path, true, d.reasons.join(' · ')));
+  }
+  updateWizCount();
+}
+document.getElementById('btnWizard').addEventListener('click', openWizard);
+
+// ---------- OCR + library zip wiring ----------
+let ocrReady = false;
+async function refreshOcrStatus(){
+  try{
+    const s = await invoke('ocr_status');
+    ocrReady = !!s.tesseract;
+  }catch(e){ ocrReady = false; }
+  document.getElementById('btnInstallOcr').hidden = ocrReady;
+}
+async function ocrCard(card){
+  if(!ocrReady){ setStatus('OCR engine not installed yet — use “Install the OCR engine” in the Output panel first.'); return; }
+  setStatus('Reading text in “' + libDisplayName(card) + '”…');
+  try{
+    const r = await invoke('ocr_library_shot', { shotPath: card.shot_path });
+    setStatus('Text saved with the shot — search finds it now. ' +
+      (r.text ? 'Starts: “' + r.text.slice(0, 60).replace(/\s+/g, ' ') + '…”' : '(no readable text found)'));
+    await loadLibrary();
+  }catch(e){ setStatus('OCR failed: ' + e); }
+}
+document.getElementById('btnInstallOcr').addEventListener('click', async () => {
+  setStatus('Installing the OCR engine — approve the system prompt…');
+  try{
+    await invoke('ensure_ocr');
+    await refreshOcrStatus();
+    setStatus(ocrReady ? 'OCR engine installed. Fully offline, forever.' : 'Install did not complete.');
+  }catch(e){ setStatus('OCR install failed: ' + e); }
+});
+document.getElementById('btnGrabText').addEventListener('click', async () => {
+  if(!doc){ setStatus('Capture or open a shot first.'); return; }
+  if(!ocrReady){ setStatus('OCR engine not installed yet — one click below installs it (system prompt, then done forever).'); return; }
+  setStatus('Reading the text in this shot…');
+  try{
+    const r = await invoke('grab_text');
+    document.getElementById('ocrText').value = r.text || '';
+    if(doc) doc.ocr_text = r.text;
+    setStatus(r.text ? 'Text read and saved with the shot — export keeps it searchable.' : 'No readable text in this shot.');
+  }catch(e){ setStatus('OCR failed: ' + e); }
+});
+document.getElementById('btnCopyText').addEventListener('click', async () => {
+  const t = document.getElementById('ocrText').value;
+  if(!t){ setStatus('Nothing to copy yet — Read text first.'); return; }
+  try{ await navigator.clipboard.writeText(t); setStatus('Text copied.'); }
+  catch(e){ setStatus('Copy failed: ' + e); }
+});
+document.getElementById('btnExportLib').addEventListener('click', async () => {
+  setStatus('Bundling the library…');
+  try{
+    const r = await invoke('export_library_zip');
+    setStatus(`Library exported: ${r.files} files → ${r.path}`);
+  }catch(e){ setStatus('Export failed: ' + e); }
+});
+document.getElementById('btnImportLib').addEventListener('click', () => {
+  const row = document.getElementById('importRow');
+  row.hidden = !row.hidden;
+  if(!row.hidden) document.getElementById('importPath').focus();
+});
+document.getElementById('btnImportGo').addEventListener('click', async () => {
+  const p = document.getElementById('importPath').value.trim();
+  if(!p){ setStatus('Paste the path to a .zip first.'); return; }
+  setStatus('Importing…');
+  try{
+    const r = await invoke('import_library_zip', { zipPath: p });
+    document.getElementById('importRow').hidden = true;
+    await loadLibrary();
+    setStatus(`Imported ${r.imported} file(s); skipped ${r.skipped} (already here or not shots).`);
+  }catch(e){ setStatus('Import failed: ' + e); }
+});
+document.getElementById('btnWizClose').addEventListener('click', () => { document.getElementById('wizard').hidden = true; });
+document.getElementById('btnWizCancel').addEventListener('click', () => { document.getElementById('wizard').hidden = true; });
+document.getElementById('btnWizDelete').addEventListener('click', async () => {
+  const n = wizSelection.size;
+  if(!n) return;
+  if(!confirm(`Delete ${n} shot(s)? Files, sidecars, and exports go together. There is no undo.`)) return;
+  try{
+    const res = await invoke('delete_shots', { paths: [...wizSelection] });
+    document.getElementById('wizard').hidden = true;
+    await loadLibrary();
+    setStatus(`Cleanup deleted ${res.shots} shot(s) — ${(res.bytes_freed / 1048576).toFixed(1)} MB freed.`);
+  }catch(e){ setStatus('Cleanup delete failed: ' + e); }
+});
+
+// An imported image lands exactly like a fresh capture: editor open,
+// decision bar up, library refreshed (the copy already lives there).
+async function presentImported(res){
+  imgW = res.width; imgH = res.height;
+  selectedId = null; pendingCrop = null;
+  doc = await invoke('get_doc');
+  await drawEditor();
+  await drawPreview();
+  await loadLibrary();
+  showQuick();
+  setStatus(`Opened “${res.name}” — a copy lives in your library and the original is untouched. Crop it, straighten it, mark it up.`);
+}
+async function openImagePath(path){
+  try{
+    const res = await invoke('open_image_file', { path });
+    await presentImported(res);
+  }catch(e){ setStatus('Open failed: ' + e); }
+}
+document.getElementById('btnOpen').addEventListener('click', async () => {
+  try{
+    const res = await invoke('open_image_picker');
+    if(res) await presentImported(res);
+  }catch(e){ setStatus('Open failed: ' + e); }
+});
+// Drag-and-drop: Tauri hands us real filesystem paths for dropped files.
+try{
+  window.__TAURI__.webview.getCurrentWebview().onDragDropEvent((ev) => {
+    const p = ev.payload || {};
+    if(p.type === 'enter' || p.type === 'over'){
+      document.body.classList.add('dragging');
+    }else if(p.type === 'leave'){
+      document.body.classList.remove('dragging');
+    }else if(p.type === 'drop'){
+      document.body.classList.remove('dragging');
+      const path = (p.paths || [])[0];
+      if(path) openImagePath(path);
+    }
+  });
+}catch(e){ /* drag-drop unavailable on this build */ }
 
 async function openEntry(path){
   try{
@@ -1148,7 +2406,26 @@ async function openEntry(path){
 }
 document.getElementById('btnLibRefresh').addEventListener('click', loadLibrary);
 
+// Panel open/closed state persists — the aside shows what he uses,
+// folded otherwise. Markup starts open; the rest start folded.
+document.querySelectorAll('details.panel').forEach(d => {
+  d.addEventListener('toggle', () => {
+    try{
+      const state = JSON.parse(localStorage.getItem('ss_panels') || '{}');
+      state[d.id] = d.open;
+      localStorage.setItem('ss_panels', JSON.stringify(state));
+    }catch(e){ /* private mode */ }
+  });
+});
+try{
+  const state = JSON.parse(localStorage.getItem('ss_panels') || '{}');
+  document.querySelectorAll('details.panel').forEach(d => {
+    if(d.id in state) d.open = !!state[d.id];
+  });
+}catch(e){ /* first run keeps the defaults */ }
+
 (async () => {
+  updateToolHint(tool);
   try{
     const env = await invoke('env_info');
     document.getElementById('envBadge').textContent =
@@ -1158,17 +2435,32 @@ document.getElementById('btnLibRefresh').addEventListener('click', loadLibrary);
   if(!localStorage.getItem('ss_intro_dismissed')) $('banner').classList.add('show');
   try{
     const s = await invoke('get_settings');
-    $('backendSel').value = s.backend;
+    if(backendDd) backendDd.set(s.backend);
     $('backendNote').textContent = BACKEND_NOTES[s.backend] || BACKEND_NOTES.auto;
+    document.getElementById('saveDirInput').value = s.save_dir || '';
+    if(retentionDd) retentionDd.set(String(s.retention_days || 0));
+    await refreshSaveDirInfo();
   }catch(e){ /* settings unavailable */ }
   await loadDiag();
   await loadPresets();
+  await refreshOcrStatus();
   await loadLibrary();
+  try{
+    const sw = await invoke('library_sweep');
+    if(sw.deleted){
+      await loadLibrary();
+      setStatus(`Startup sweep: removed ${sw.deleted} shot(s) past the ${sw.retention_days}-day retention — ${(sw.bytes_freed / 1048576).toFixed(1)} MB freed.`);
+    }
+  }catch(e){ /* sweep unavailable */ }
   try{
     const sa = await invoke('startup_action');
     if(sa){
-      if(sa.delay) await sleep(sa.delay * 1000);
-      await doCapture(sa.mode !== 'full');
+      if(sa.mode === 'open' && sa.path){
+        await openImagePath(sa.path);
+      }else{
+        if(sa.delay) await sleep(sa.delay * 1000);
+        await doCapture(sa.mode !== 'full');
+      }
     }
   }catch(e){ /* no startup action */ }
 })();

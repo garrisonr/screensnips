@@ -119,6 +119,24 @@ fn draw_text_bitmap(img: &mut RgbaImage, x: f32, y: f32, height: f32, text: &str
     max_width
 }
 
+/// The callout bubble's pixel size for `text`: the MEASURED text width
+/// plus padding on both sides; stacked line heights plus vertical
+/// padding. Single source of truth for the drawn box — the editor's
+/// canvas code mirrors this formula with measureText, and the model's
+/// estimate (shot_model::callout_box_estimate) is calibrated to it.
+/// Returns (width_px, height_px, glyph_height_px, pad_px).
+pub fn callout_box_px(
+    text: &str,
+    font_size: Option<f32>,
+    img_w: u32,
+) -> (f32, f32, f32, f32) {
+    let height = (font_size.unwrap_or(0.045) * img_w as f32).max(8.0);
+    let text_w = measure(text, height);
+    let lines = text.split('\n').count() as f32;
+    let pad = height * 0.45;
+    (text_w + pad * 2.0, lines * height * 1.3 + pad * 1.4, height, pad)
+}
+
 /// Pixel width of the widest line at the given glyph height (system font
 /// when available, bitmap estimate otherwise).
 pub fn measure(text: &str, height: f32) -> f32 {

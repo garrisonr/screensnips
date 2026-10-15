@@ -115,12 +115,17 @@ impl Default for Style {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum PrimitiveKind {
-    Arrow { from: Point, to: Point },
+    Arrow { from: Point, to: Point, #[serde(default)] bend: f32 },
     Line { from: Point, to: Point },
     Freehand { points: Vec<Point> },
     Rect { rect: RectN, corner_radius: f32 },
     Ellipse { rect: RectN },
-    Highlight { rect: RectN },
+    /// A highlighter PEN stroke (Dickles' law: a pen, not a box) —
+    /// a wide translucent path that tints what it crosses. Stored
+    /// as the pointer's polyline, exactly like Freehand; the nib
+    /// width derives from the style's stroke_width at render time.
+    /// (v1 sidecars stored a rect — from_toml migrates them.)
+    Highlight { points: Vec<Point> },
     /// Dim everything OUTSIDE the rect (Snagit spotlight).
     Spotlight { rect: RectN },
     Text { at: Point, text: String },
@@ -128,7 +133,15 @@ pub enum PrimitiveKind {
     /// pointing at `tail` — the thing being called out.
     Callout { at: Point, tail: Point, text: String },
     StepBadge { at: Point },
-    Stamp { at: Point, stamp_id: String, scale: f32 },
+    Stamp {
+        at: Point,
+        stamp_id: String,
+        scale: f32,
+        /// Clockwise rotation in degrees (0 = upright). Default keeps
+        /// sidecars written before rotation existed loading unchanged.
+        #[serde(default)]
+        rotation_deg: f32,
+    },
     /// Privacy regions: rendered by blurring the underlying image pixels.
     Blur { rect: RectN },
     /// Privacy regions: rendered by pixelating the underlying image pixels.
@@ -158,14 +171,15 @@ impl Primitive {
             r.y = (r.y + dy).clamp(0.0, 1.0 - r.h);
         };
         match &mut self.kind {
-            PrimitiveKind::Arrow { from, to } | PrimitiveKind::Line { from, to } => {
+            PrimitiveKind::Arrow { from, to, .. } | PrimitiveKind::Line { from, to } => {
                 mv(from);
                 mv(to);
             }
-            PrimitiveKind::Freehand { points } => points.iter_mut().for_each(mv),
+            PrimitiveKind::Freehand { points } | PrimitiveKind::Highlight { points } => {
+                points.iter_mut().for_each(mv)
+            }
             PrimitiveKind::Rect { rect, .. }
             | PrimitiveKind::Ellipse { rect }
-            | PrimitiveKind::Highlight { rect }
             | PrimitiveKind::Spotlight { rect }
             | PrimitiveKind::Blur { rect }
             | PrimitiveKind::Pixelate { rect } => mvr(rect),
@@ -199,14 +213,15 @@ impl Primitive {
             p.y = p.y.clamp(0.0, 1.0);
         };
         match &mut self.kind {
-            PrimitiveKind::Arrow { from, to } | PrimitiveKind::Line { from, to } => {
+            PrimitiveKind::Arrow { from, to, .. } | PrimitiveKind::Line { from, to } => {
                 map_pt(from);
                 map_pt(to);
             }
-            PrimitiveKind::Freehand { points } => points.iter_mut().for_each(map_pt),
+            PrimitiveKind::Freehand { points } | PrimitiveKind::Highlight { points } => {
+                points.iter_mut().for_each(map_pt)
+            }
             PrimitiveKind::Rect { rect, .. }
             | PrimitiveKind::Ellipse { rect }
-            | PrimitiveKind::Highlight { rect }
             | PrimitiveKind::Spotlight { rect }
             | PrimitiveKind::Blur { rect }
             | PrimitiveKind::Pixelate { rect } => *rect = new,
@@ -223,9 +238,16 @@ impl Primitive {
                 }
             }
             PrimitiveKind::StepBadge { at } => *at = Point::new(nx, ny),
-            PrimitiveKind::Stamp { at, scale, .. } => {
-                *at = Point::new(nx, ny);
-                *scale = nw;
+            PrimitiveKind::Stamp { at, scale, rotation_deg, .. } => {
+                // The editor passes the ROTATED bbox as the target; undo
+                // the |cos|+|sin| growth to recover the true scale, and
+                // center the unrotated square on the target's center.
+                let rad = rotation_deg.to_radians();
+                let f = (rad.cos().abs() + rad.sin().abs()).max(1.0);
+                let ns = (nw / f).clamp(0.005, 1.0);
+                *scale = ns;
+                at.x = (nx + nw / 2.0 - ns / 2.0).clamp(0.0, 1.0 - ns);
+                at.y = (ny + nh / 2.0 - ns / 2.0).clamp(0.0, 1.0 - ns);
             }
         }
     }
@@ -249,14 +271,15 @@ impl Primitive {
             r.h /= oh;
         };
         match &mut self.kind {
-            PrimitiveKind::Arrow { from, to } | PrimitiveKind::Line { from, to } => {
+            PrimitiveKind::Arrow { from, to, .. } | PrimitiveKind::Line { from, to } => {
                 mp(from);
                 mp(to);
             }
-            PrimitiveKind::Freehand { points } => points.iter_mut().for_each(mp),
+            PrimitiveKind::Freehand { points } | PrimitiveKind::Highlight { points } => {
+                points.iter_mut().for_each(mp)
+            }
             PrimitiveKind::Rect { rect, .. }
             | PrimitiveKind::Ellipse { rect }
-            | PrimitiveKind::Highlight { rect }
             | PrimitiveKind::Spotlight { rect }
             | PrimitiveKind::Blur { rect }
             | PrimitiveKind::Pixelate { rect } => mr(rect),
@@ -285,10 +308,21 @@ impl Primitive {
     /// re-present when this primitive changes, and nothing more.
     pub fn bbox(&self) -> RectN {
         match &self.kind {
-            PrimitiveKind::Arrow { from, to } | PrimitiveKind::Line { from, to } => {
-                RectN::from_corners(*from, *to)
+            PrimitiveKind::Arrow { from, to, bend } => {
+                // Include the curve's apex so handles hug a bent arrow.
+                let base = RectN::from_corners(*from, *to);
+                if bend.abs() < 0.001 {
+                    return base;
+                }
+                let ctrl = arrow_control(*from, *to, *bend);
+                let apex = Point::new(
+                    0.25 * from.x + 0.5 * ctrl.x + 0.25 * to.x,
+                    0.25 * from.y + 0.5 * ctrl.y + 0.25 * to.y,
+                );
+                base.union(&RectN { x: apex.x, y: apex.y, w: f32::EPSILON, h: f32::EPSILON })
             }
-            PrimitiveKind::Freehand { points } => points
+            PrimitiveKind::Line { from, to } => RectN::from_corners(*from, *to),
+            PrimitiveKind::Freehand { points } | PrimitiveKind::Highlight { points } => points
                 .iter()
                 .fold(None, |acc: Option<RectN>, p| {
                     let r = RectN { x: p.x, y: p.y, w: f32::EPSILON, h: f32::EPSILON };
@@ -300,7 +334,6 @@ impl Primitive {
                 .unwrap_or(RectN { x: 0.0, y: 0.0, w: 1.0, h: 1.0 }),
             PrimitiveKind::Rect { rect, .. }
             | PrimitiveKind::Ellipse { rect }
-            | PrimitiveKind::Highlight { rect }
             | PrimitiveKind::Spotlight { rect }
             | PrimitiveKind::Blur { rect }
             | PrimitiveKind::Pixelate { rect } => *rect,
@@ -313,25 +346,115 @@ impl Primitive {
             PrimitiveKind::Text { at, .. } | PrimitiveKind::StepBadge { at } => {
                 RectN { x: at.x, y: at.y, w: 0.05, h: 0.05 }
             }
-            PrimitiveKind::Stamp { at, scale, .. } => {
-                RectN { x: at.x, y: at.y, w: *scale, h: *scale }
+            PrimitiveKind::Stamp { at, scale, rotation_deg, .. } => {
+                // A rotated square's axis-aligned bounds grow by
+                // |cos| + |sin|; keep the bbox honest so selection
+                // handles hug what the user actually sees.
+                let rad = rotation_deg.to_radians();
+                let f = (rad.cos().abs() + rad.sin().abs()).max(1.0);
+                let s2 = scale * f;
+                RectN {
+                    x: at.x + scale / 2.0 - s2 / 2.0,
+                    y: at.y + scale / 2.0 - s2 / 2.0,
+                    w: s2,
+                    h: s2,
+                }
             }
+        }
+    }
+
+    /// Aspect-aware bounding box (audit fix). `bbox()` is aspect-blind:
+    /// it treats width-normalized extents as if they were
+    /// height-normalized too. For primitives whose size is defined in
+    /// WIDTH units (stamps are pixel-squares sized by width; callout
+    /// heights stack from a width-relative font size), the true
+    /// height-normalized extent is the width-unit extent × (W/H). On a
+    /// 21:9 screenshot the blind box understates a stamp's height by
+    /// 2.37×, so handles, crop decisions, and dirty regions landed in
+    /// another county. Callers that know the image aspect (Document
+    /// ops) use this; `w2h` = image width / height.
+    pub fn bbox_aspect(&self, w2h: f32) -> RectN {
+        match &self.kind {
+            PrimitiveKind::Stamp {
+                at,
+                scale,
+                rotation_deg,
+                ..
+            } => {
+                let rad = rotation_deg.to_radians();
+                let f = (rad.cos().abs() + rad.sin().abs()).max(1.0);
+                let s2 = scale * f;
+                RectN {
+                    x: at.x + scale / 2.0 - s2 / 2.0,
+                    y: at.y + (scale * w2h) / 2.0 - (s2 * w2h) / 2.0,
+                    w: s2,
+                    h: s2 * w2h,
+                }
+            }
+            PrimitiveKind::Callout { at, tail, text } => {
+                let (bw, bh) = callout_box_estimate(text, self.style.font_size);
+                let boxr = RectN {
+                    x: at.x,
+                    y: at.y,
+                    w: bw,
+                    h: bh * w2h,
+                };
+                let tailr = RectN {
+                    x: tail.x,
+                    y: tail.y,
+                    w: f32::EPSILON,
+                    h: f32::EPSILON,
+                };
+                boxr.union(&tailr)
+            }
+            _ => self.bbox(),
         }
     }
 }
 
-/// Estimated callout box size in normalized units, given the text and the
-/// style font size (a fraction of image WIDTH). The renderer measures with
-/// the real font and may differ slightly; this estimate drives bboxes
-/// (handles, dirty regions). Height is approximate — normalized Y can't
-/// know the image aspect — and errs generous so handles never clip text.
+/// Quadratic control point for a bent arrow. `bend` is the
+/// perpendicular offset as a fraction of the from→to distance,
+/// measured along the left-hand normal (−dy, dx) of the direction of
+/// travel — positive bend bows the arrow to its left on screen
+/// (y-down). The renderer computes the same point in pixel space;
+/// this normalized version serves bbox math.
+pub fn arrow_control(from: Point, to: Point, bend: f32) -> Point {
+    let (dx, dy) = (to.x - from.x, to.y - from.y);
+    let len = (dx * dx + dy * dy).sqrt();
+    if len < 1e-6 {
+        return from;
+    }
+    let (nx, ny) = (-dy / len, dx / len);
+    Point::new(
+        (from.x + to.x) / 2.0 + nx * bend * len,
+        (from.y + to.y) / 2.0 + ny * bend * len,
+    )
+}
+
+/// Average glyph advance (fraction of the em) of the renderer's font
+/// stack (bold system face). The renderer's own measurement of this
+/// value lives in shot-render's `font::avg_advance_em`; a shot-render
+/// test asserts the two stay in step, so this estimate is calibrated
+/// against the real font instead of guessed (audit fix — the old
+/// 0.60-em guess plus a mismatched formula let editor, model, and
+/// exporter draw three different callout boxes).
+pub const CALLOUT_ADVANCE_EM: f32 = 0.62;
+
+/// Estimated callout box size, given the text and the style font size
+/// (a fraction of image WIDTH). BOTH returned axes are in
+/// width-normalized units: the width is directly usable, the height
+/// must be multiplied by the image aspect (W/H) to become a
+/// height-normalized extent — see `Primitive::bbox_aspect`. The
+/// formula mirrors the renderer's measured box
+/// (shot_render::text::callout_box_px): measured text width + padding
+/// both sides; stacked line heights + vertical padding.
 pub fn callout_box_estimate(text: &str, font_size: Option<f32>) -> (f32, f32) {
-    let fs = font_size.unwrap_or(0.035);
-    let longest = text.split('\n').map(|l| l.chars().count()).max().unwrap_or(0);
+    let fs = font_size.unwrap_or(0.045);
+    let longest = text.split('\n').map(|l| l.chars().count()).max().unwrap_or(0) as f32;
     let lines = text.split('\n').count().max(1) as f32;
-    // average glyph advance ~0.60 em for the bold system face; em = fs
-    let w = 0.03 + longest as f32 * 0.60 * fs;
-    let h = lines * 1.9 * fs;
+    let pad = 0.45 * fs;
+    let w = longest * CALLOUT_ADVANCE_EM * fs + pad * 2.0;
+    let h = lines * 1.3 * fs + pad * 1.4;
     (w, h)
 }
 
@@ -416,6 +539,25 @@ pub struct Beautify {
     pub aspect: Option<f32>,
     /// Straighten/crop applied to the source before compositing, if any.
     pub crop: Option<RectN>,
+    /// Decorative frame effect around the shot (Instant-photo chin,
+    /// postcard border, peeled corner). Serde-defaulted: v1 sidecars
+    /// without it parse as None.
+    #[serde(default)]
+    pub frame: FrameStyle,
+}
+
+/// Decorative frames. "Instant" is the classic instant-photo look —
+/// Polaroid is a trademark, the look is a layout: white frame, deep
+/// chin. Postcard: slim white border + hairline. Peeled: a dog-eared
+/// bottom-right corner.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum FrameStyle {
+    #[default]
+    None,
+    Instant,
+    Postcard,
+    Peeled,
 }
 
 impl Default for Beautify {
@@ -427,6 +569,7 @@ impl Default for Beautify {
             shadow: Shadow::default(),
             aspect: None,
             crop: None,
+            frame: FrameStyle::None,
         }
     }
 }
@@ -453,6 +596,11 @@ pub struct Document {
     pub primitives: Vec<Primitive>,
     #[serde(default = "default_next_id")]
     pub next_id: u64,
+    /// Text recognized in the shot (offline OCR), stored with the shot
+    /// so the library can search by content. Serde-defaulted: older
+    /// sidecars parse as None.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ocr_text: Option<String>,
 }
 
 fn default_next_id() -> u64 {
@@ -487,6 +635,7 @@ impl Document {
             beautify: Beautify::default(),
             primitives: Vec::new(),
             next_id: 1,
+            ocr_text: None,
         }
     }
 
@@ -542,10 +691,14 @@ impl Document {
         let new_w = ((cw * self.image.width as f32).round() as u32).max(1);
         let new_h = ((ch * self.image.height as f32).round() as u32).max(1);
 
+        let w2h = self.image.width as f32 / self.image.height.max(1) as f32;
         let mut dropped = 0usize;
         let mut kept: Vec<Primitive> = Vec::with_capacity(self.primitives.len());
         for mut prim in self.primitives.drain(..) {
-            let b = prim.bbox();
+            // Aspect-aware: crop intersection decisions must use the
+            // box the user actually sees (stamps/callouts on wide
+            // screenshots were misjudged by the blind box).
+            let b = prim.bbox_aspect(w2h);
             // intersection with the crop rect, in old space
             let ix0 = b.x.max(cx);
             let iy0 = b.y.max(cy);
@@ -564,13 +717,37 @@ impl Document {
                 w: (ix1 - ix0) / cw,
                 h: (iy1 - iy0) / ch,
             };
-            let nb = prim.bbox();
+            // nb lives in CROP space — its aspect is the new frame's.
+            let new_w2h = new_w as f32 / new_h.max(1) as f32;
+            let nb = prim.bbox_aspect(new_w2h);
             if (nb.x - target.x).abs() > 1e-6
                 || (nb.y - target.y).abs() > 1e-6
                 || (nb.w - target.w).abs() > 1e-6
                 || (nb.h - target.h).abs() > 1e-6
             {
-                prim.set_bbox(target);
+                if let PrimitiveKind::Stamp {
+                    at,
+                    scale,
+                    rotation_deg,
+                    ..
+                } = &mut prim.kind
+                {
+                    // Stamps: Primitive::set_bbox is aspect-blind and
+                    // would rescale the stamp from a mixed frame —
+                    // apply the same aspect-aware math as
+                    // resize_primitive instead.
+                    let rad = rotation_deg.to_radians();
+                    let f = (rad.cos().abs() + rad.sin().abs()).max(1.0);
+                    let ns = (target.w / f).clamp(0.005, 1.0);
+                    let cx = target.x + target.w / 2.0;
+                    let cy = target.y + target.h / 2.0;
+                    *scale = ns;
+                    at.x = (cx - ns / 2.0).clamp(0.0, (1.0 - ns).max(0.0));
+                    at.y = (cy - ns * new_w2h / 2.0)
+                        .clamp(0.0, (1.0 - ns * new_w2h).max(0.0));
+                } else {
+                    prim.set_bbox(target);
+                }
             }
             kept.push(prim);
         }
@@ -583,23 +760,86 @@ impl Document {
 
     /// Resize/reposition a primitive to a new bounding box (handle drags).
     pub fn resize_primitive(&mut self, id: u64, bbox: RectN) -> Result<(), ModelError> {
+        // Stamps are squares in PIXEL space whose size is a fraction of
+        // image WIDTH — in normalized coords their height is scale ×
+        // (W/H). Primitive::set_bbox is aspect-blind and mangled stamp
+        // resizes on every non-square screenshot (the stamp jumped
+        // vertically and handles landed in another county). Route
+        // stamps through aspect-aware math here, where the document
+        // knows the image size.
+        let w2h = self.image.width as f32 / self.image.height.max(1) as f32;
         let prim = self
             .primitives
             .iter_mut()
             .find(|p| p.id == id)
             .ok_or(ModelError::UnknownId(id))?;
+        if let PrimitiveKind::Stamp { at, scale, rotation_deg, .. } = &mut prim.kind {
+            let rad = rotation_deg.to_radians();
+            let f = (rad.cos().abs() + rad.sin().abs()).max(1.0);
+            let ns = (bbox.w / f).clamp(0.005, 1.0);
+            let cx = bbox.x + bbox.w / 2.0;
+            let cy = bbox.y + bbox.h / 2.0;
+            *scale = ns;
+            at.x = (cx - ns / 2.0).clamp(0.0, (1.0 - ns).max(0.0));
+            at.y = (cy - ns * w2h / 2.0).clamp(0.0, (1.0 - ns * w2h).max(0.0));
+            return Ok(());
+        }
         prim.set_bbox(bbox);
         Ok(())
     }
 
+    /// Set an arrow's bend (see arrow_control). Ok(false) for
+    /// non-arrows, mirroring set_rotation.
+    pub fn set_bend(&mut self, id: u64, bend: f32) -> Result<bool, ModelError> {
+        let prim = self
+            .primitives
+            .iter_mut()
+            .find(|p| p.id == id)
+            .ok_or(ModelError::UnknownId(id))?;
+        match &mut prim.kind {
+            PrimitiveKind::Arrow { bend: b, .. } => {
+                *b = bend.clamp(-1.2, 1.2);
+                Ok(true)
+            }
+            _ => Ok(false),
+        }
+    }
+
+    /// Set a stamp's rotation (degrees clockwise, normalized to
+    /// [0, 360)). Ok(true) when applied, Ok(false) when the primitive
+    /// exists but can't rotate (yet — stamps first), UnknownId when it
+    /// doesn't exist at all.
+    pub fn set_rotation(&mut self, id: u64, deg: f32) -> Result<bool, ModelError> {
+        let prim = self
+            .primitives
+            .iter_mut()
+            .find(|p| p.id == id)
+            .ok_or(ModelError::UnknownId(id))?;
+        match &mut prim.kind {
+            PrimitiveKind::Stamp { rotation_deg, .. } => {
+                *rotation_deg = ((deg % 360.0) + 360.0) % 360.0;
+                Ok(true)
+            }
+            _ => Ok(false),
+        }
+    }
+
     /// Drag-move a primitive by a normalized delta (clamped in-range).
     pub fn translate_primitive(&mut self, id: u64, dx: f32, dy: f32) -> Result<(), ModelError> {
+        let w2h = self.image.width as f32 / self.image.height.max(1) as f32;
         let prim = self
             .primitives
             .iter_mut()
             .find(|p| p.id == id)
             .ok_or(ModelError::UnknownId(id))?;
         prim.translate(dx, dy);
+        // Primitive::translate clamps with the aspect-blind bbox; give
+        // stamps their true pixel-square bounds so they can reach the
+        // bottom of a wide screenshot and never slide past it.
+        if let PrimitiveKind::Stamp { at, scale, .. } = &mut prim.kind {
+            at.x = at.x.clamp(0.0, (1.0 - *scale).max(0.0));
+            at.y = at.y.clamp(0.0, (1.0 - *scale * w2h).max(0.0));
+        }
         Ok(())
     }
 
@@ -631,14 +871,15 @@ impl Document {
         }
         for p in &self.primitives {
             let ok = match &p.kind {
-                PrimitiveKind::Arrow { from, to } | PrimitiveKind::Line { from, to } => {
+                PrimitiveKind::Arrow { from, to, .. } | PrimitiveKind::Line { from, to } => {
                     from.in_range() && to.in_range()
                 }
-                PrimitiveKind::Freehand { points } => points.iter().all(|pt| pt.in_range()),
+                PrimitiveKind::Freehand { points } | PrimitiveKind::Highlight { points } => {
+                    points.iter().all(|pt| pt.in_range())
+                }
                 PrimitiveKind::Rect { rect, .. }
                 | PrimitiveKind::Ellipse { rect }
-                | PrimitiveKind::Highlight { rect }
-                | PrimitiveKind::Spotlight { rect }
+                    | PrimitiveKind::Spotlight { rect }
                 | PrimitiveKind::Blur { rect }
                 | PrimitiveKind::Pixelate { rect } => rect.in_range(),
                 PrimitiveKind::Callout { at, tail, .. } => at.in_range() && tail.in_range(),
@@ -666,9 +907,54 @@ impl Document {
 
     /// Parse a sidecar, then validate.
     pub fn from_toml(text: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let doc: Document = toml::from_str(text)?;
+        let mut value: toml::Value = toml::from_str(text)?;
+        migrate_highlight_rects(&mut value);
+        let doc: Document = value.try_into()?;
         doc.validate()?;
         Ok(doc)
+    }
+}
+
+/// v1 sidecars stored Highlight as a filled rect; the tool is a pen
+/// now. Migrate in the parsed TOML: a rect highlight becomes a
+/// two-point stroke along the rect's horizontal midline — the swipe
+/// the user actually made — so old libraries open unchanged.
+fn migrate_highlight_rects(value: &mut toml::Value) {
+    let Some(prims) = value
+        .get_mut("primitives")
+        .and_then(|p| p.as_array_mut())
+    else {
+        return;
+    };
+    for prim in prims.iter_mut() {
+        let Some(kind) = prim.get_mut("kind").and_then(|k| k.as_table_mut()) else {
+            continue;
+        };
+        if kind.get("type").and_then(|t| t.as_str()) != Some("highlight") {
+            continue;
+        }
+        if kind.contains_key("points") {
+            continue;
+        }
+        let Some(rect) = kind.remove("rect") else {
+            continue;
+        };
+        let get = |k: &str| rect.get(k).and_then(|v| v.as_float());
+        let (x, y, w, h) = match (get("x"), get("y"), get("w"), get("h")) {
+            (Some(x), Some(y), Some(w), Some(h)) => (x, y, w, h),
+            _ => continue,
+        };
+        let mid = y + h / 2.0;
+        let pt = |px: f64, py: f64| {
+            let mut t = toml::map::Map::new();
+            t.insert("x".into(), toml::Value::Float(px));
+            t.insert("y".into(), toml::Value::Float(py));
+            toml::Value::Table(t)
+        };
+        kind.insert(
+            "points".into(),
+            toml::Value::Array(vec![pt(x, mid), pt(x + w, mid)]),
+        );
     }
 }
 
@@ -688,7 +974,7 @@ mod tests {
     fn toml_round_trip_preserves_document() {
         let mut doc = Document::new(img());
         doc.add(
-            PrimitiveKind::Arrow { from: pt(0.1, 0.2), to: pt(0.5, 0.6) },
+            PrimitiveKind::Arrow { from: pt(0.1, 0.2), to: pt(0.5, 0.6), bend: 0.0 },
             Style::default(),
         );
         doc.add(PrimitiveKind::StepBadge { at: pt(0.3, 0.3) }, Style::default());
@@ -708,7 +994,7 @@ mod tests {
         let mut doc = Document::new(img());
         let a = doc.add(PrimitiveKind::StepBadge { at: pt(0.1, 0.1) }, Style::default());
         let _mid = doc.add(
-            PrimitiveKind::Arrow { from: pt(0.0, 0.0), to: pt(0.2, 0.2) },
+            PrimitiveKind::Arrow { from: pt(0.0, 0.0), to: pt(0.2, 0.2), bend: 0.0 },
             Style::default(),
         );
         let b = doc.add(PrimitiveKind::StepBadge { at: pt(0.5, 0.5) }, Style::default());
@@ -733,7 +1019,7 @@ mod tests {
     fn validate_rejects_out_of_range_and_future_versions() {
         let mut doc = Document::new(img());
         doc.add(
-            PrimitiveKind::Arrow { from: pt(-0.5, 0.2), to: pt(0.5, 0.6) },
+            PrimitiveKind::Arrow { from: pt(-0.5, 0.2), to: pt(0.5, 0.6), bend: 0.0 },
             Style::default(),
         );
         assert!(matches!(doc.validate(), Err(ModelError::OutOfRange(_))));
@@ -769,7 +1055,7 @@ mod tests {
         let id = doc.add(
             PrimitiveKind::Arrow {
                 from: Point::new(0.2, 0.2),
-                to: Point::new(0.4, 0.6),
+                to: Point::new(0.4, 0.6), bend: 0.0,
             },
             Style::default(),
         );
@@ -779,7 +1065,7 @@ mod tests {
         let b = p.bbox();
         let close = |a: f32, e: f32| (a - e).abs() < 1e-6;
         assert!(close(b.x, 0.1) && close(b.y, 0.1) && close(b.w, 0.4) && close(b.h, 0.8), "bbox {:?}", b);
-        if let PrimitiveKind::Arrow { from, to } = &p.kind {
+        if let PrimitiveKind::Arrow { from, to, .. } = &p.kind {
             assert!(close(from.x, 0.1) && close(from.y, 0.1), "from {:?}", from);
             assert!(close(to.x, 0.5) && close(to.y, 0.9), "to {:?}", to);
         } else {
@@ -810,7 +1096,7 @@ mod tests {
         let inside = doc.add(
             PrimitiveKind::Arrow {
                 from: Point::new(0.6, 0.2),
-                to: Point::new(0.8, 0.6),
+                to: Point::new(0.8, 0.6), bend: 0.0,
             },
             Style::default(),
         );
@@ -823,7 +1109,7 @@ mod tests {
         assert_eq!((doc.image.width, doc.image.height), (500, 500));
         assert_eq!(doc.primitives.len(), 1);
         let close = |a: f32, e: f32| (a - e).abs() < 1e-6;
-        if let PrimitiveKind::Arrow { from, to } = &doc.get(inside).unwrap().kind {
+        if let PrimitiveKind::Arrow { from, to, .. } = &doc.get(inside).unwrap().kind {
             assert!(close(from.x, 0.2) && close(from.y, 0.2), "from {:?}", from);
             assert!(close(to.x, 0.6) && close(to.y, 0.6), "to {:?}", to);
         } else {
@@ -889,11 +1175,173 @@ mod tests {
     fn arrow_bbox_is_corner_box() {
         let p = Primitive {
             id: 1,
-            kind: PrimitiveKind::Arrow { from: pt(0.7, 0.1), to: pt(0.2, 0.9) },
+            kind: PrimitiveKind::Arrow { from: pt(0.7, 0.1), to: pt(0.2, 0.9), bend: 0.0 },
             style: Style::default(),
         };
         let b = p.bbox();
         let close = |a: f32, e: f32| (a - e).abs() < 1e-6;
         assert!(close(b.x, 0.2) && close(b.y, 0.1) && close(b.w, 0.5) && close(b.h, 0.8));
+    }
+
+    #[test]
+    fn stamp_resize_on_a_wide_screenshot_keeps_its_center() {
+        // Regression (dogfooded on a 2560×1080 screen): stamp resize
+        // used aspect-blind math, so on any non-square image the stamp
+        // teleported vertically and scaling felt broken. A 1000×400
+        // document: a stamp of scale 0.1 is 100px square = normalized
+        // height 0.25.
+        let mut doc = Document::new(ImageRef {
+            path: "x.png".into(),
+            width: 1000,
+            height: 400,
+            sha256: None,
+        });
+        let id = doc.add(
+            PrimitiveKind::Stamp {
+                at: pt(0.40, 0.30),
+                stamp_id: "check".into(),
+                scale: 0.1,
+                rotation_deg: 0.0,
+            },
+            Style::default(),
+        );
+        // center now: (0.45, 0.30 + 0.125) = (0.45, 0.425). Ask for
+        // scale 0.2 (200px → normalized 0.2 × 0.5) around the SAME
+        // center, expressed as the editor's AABB target:
+        let target = RectN { x: 0.35, y: 0.425 - 0.25, w: 0.2, h: 0.5 };
+        doc.resize_primitive(id, target).unwrap();
+        let p = doc.get(id).unwrap();
+        match &p.kind {
+            PrimitiveKind::Stamp { at, scale, .. } => {
+                assert!((scale - 0.2).abs() < 1e-4, "scale = {}", scale);
+                assert!((at.x - 0.35).abs() < 1e-4, "at.x = {}", at.x);
+                assert!((at.y - 0.175).abs() < 1e-4, "at.y = {}", at.y);
+            }
+            _ => panic!("not a stamp"),
+        }
+    }
+
+    #[test]
+    fn stamp_bbox_aspect_uses_true_pixel_square_extent() {
+        // 21:9 frame: a stamp's height-normalized extent is its
+        // width extent × (2560/1080) — the blind bbox() says 0.1,
+        // the box the user sees is 0.237 tall.
+        let p = Primitive {
+            id: 1,
+            kind: PrimitiveKind::Stamp {
+                at: pt(0.5, 0.5),
+                stamp_id: "check".into(),
+                scale: 0.1,
+                rotation_deg: 0.0,
+            },
+            style: Style::default(),
+        };
+        let w2h = 2560.0 / 1080.0;
+        let b = p.bbox_aspect(w2h);
+        assert!((b.x - 0.5).abs() < 1e-5, "x = {}", b.x);
+        assert!((b.y - 0.5).abs() < 1e-5, "y = {}", b.y);
+        assert!((b.w - 0.1).abs() < 1e-5, "w = {}", b.w);
+        assert!((b.h - 0.1 * w2h).abs() < 1e-5, "h = {}", b.h);
+        // Rotated 45°: the AABB grows by √2 around the true center.
+        let p2 = Primitive {
+            id: 2,
+            kind: PrimitiveKind::Stamp {
+                at: pt(0.5, 0.5),
+                stamp_id: "check".into(),
+                scale: 0.1,
+                rotation_deg: 45.0,
+            },
+            style: Style::default(),
+        };
+        let b2 = p2.bbox_aspect(w2h);
+        let f = std::f32::consts::SQRT_2;
+        assert!((b2.w - 0.1 * f).abs() < 1e-4, "w2 = {}", b2.w);
+        assert!((b2.h - 0.1 * f * w2h).abs() < 1e-4, "h2 = {}", b2.h);
+        let cx = b2.x + b2.w / 2.0;
+        let cy = b2.y + b2.h / 2.0;
+        assert!((cx - 0.55).abs() < 1e-4, "cx = {}", cx);
+        assert!((cy - (0.5 + 0.05 * w2h)).abs() < 1e-4, "cy = {}", cy);
+    }
+
+    #[test]
+    fn callout_estimate_mirrors_renderer_formula() {
+        // "Hello" at fs 0.04: w = 5 × 0.62 × 0.04 + 2 × (0.45 × 0.04);
+        // h (width units) = 1.3 × 0.04 + 1.4 × (0.45 × 0.04).
+        let (w, h) = callout_box_estimate("Hello", Some(0.04));
+        assert!((w - 0.160).abs() < 1e-5, "w = {}", w);
+        assert!((h - 0.0772).abs() < 1e-5, "h = {}", h);
+        // bbox_aspect converts the height into height units.
+        let p = Primitive {
+            id: 3,
+            kind: PrimitiveKind::Callout {
+                at: pt(0.1, 0.1),
+                tail: pt(0.1, 0.1),
+                text: "Hello".into(),
+            },
+            style: Style {
+                font_size: Some(0.04),
+                ..Style::default()
+            },
+        };
+        let b = p.bbox_aspect(2.0);
+        assert!((b.h - h * 2.0).abs() < 1e-5, "bh = {}", b.h);
+    }
+
+    #[test]
+    fn v1_rect_highlight_sidecar_migrates_to_a_pen_stroke() {
+        // A sidecar in the OLD shape (highlight = filled rect) must
+        // still parse, and must come back as a two-point stroke along
+        // the rect's midline.
+        let old = r#"
+format_version = 1
+
+[image]
+path = "shot.png"
+width = 2560
+height = 1080
+
+[beautify]
+background = { type = "solid", color = { r = 24, g = 24, b = 28, a = 255 } }
+padding = { top = 0.0, right = 0.0, bottom = 0.0, left = 0.0, linked = true }
+corner_radius = 0.0
+
+[beautify.shadow]
+enabled = false
+blur = 0.0
+offset_y = 0.0
+opacity = 0.0
+
+[[primitives]]
+id = 1
+
+[primitives.kind]
+type = "highlight"
+
+[primitives.kind.rect]
+x = 0.2
+y = 0.4
+w = 0.5
+h = 0.1
+
+[primitives.style]
+stroke = { r = 255, g = 235, b = 0, a = 255 }
+stroke_width = 0.004
+"#;
+        let doc = Document::from_toml(old).expect("old sidecar must still load");
+        assert_eq!(doc.primitives.len(), 1);
+        match &doc.primitives[0].kind {
+            PrimitiveKind::Highlight { points } => {
+                assert_eq!(points.len(), 2);
+                assert!((points[0].x - 0.2).abs() < 1e-6);
+                assert!((points[0].y - 0.45).abs() < 1e-6, "midline y");
+                assert!((points[1].x - 0.7).abs() < 1e-6);
+                assert!((points[1].y - 0.45).abs() < 1e-6);
+            }
+            other => panic!("expected pen highlight, got {:?}", other),
+        }
+        // And the migrated document round-trips in the new shape.
+        let text = doc.to_toml().unwrap();
+        let doc2 = Document::from_toml(&text).unwrap();
+        assert_eq!(doc, doc2);
     }
 }

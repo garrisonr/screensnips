@@ -1,0 +1,19 @@
+[Desktop Entry]
+Type=Application
+Name=Screensnips
+Comment=Screenshot studio — capture, annotate, beautify; opens any image for editing
+Exec=screensnips %f
+Icon=screensnips
+Categories=Graphics;Utility;
+Terminal=false
+StartupWMClass=screensnips
+MimeType=image/png;image/jpeg;image/webp;
+Actions=Picker;Full;
+
+[Desktop Action Picker]
+Name=Capture with picker
+Exec=screensnips --capture=picker
+
+[Desktop Action Full]
+Name=Capture full screen
+Exec=screensnips --capture=full

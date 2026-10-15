@@ -40,6 +40,35 @@ impl RgbaImage {
         Color::rgba(self.data[i], self.data[i + 1], self.data[i + 2], self.data[i + 3])
     }
 
+    /// Bilinear sample at fractional coords (edge-clamped). None only
+    /// for a degenerate image. Shared by the rotation and warp paths.
+    pub fn sample_bilinear(&self, x: f32, y: f32) -> Option<Color> {
+        if self.width == 0 || self.height == 0 {
+            return None;
+        }
+        let fx = x.clamp(0.0, (self.width - 1) as f32);
+        let fy = y.clamp(0.0, (self.height - 1) as f32);
+        let x0 = fx.floor() as u32;
+        let y0 = fy.floor() as u32;
+        let x1 = (x0 + 1).min(self.width - 1);
+        let y1 = (y0 + 1).min(self.height - 1);
+        let tx = fx - x0 as f32;
+        let ty = fy - y0 as f32;
+        let (c00, c10, c01, c11) =
+            (self.get(x0, y0), self.get(x1, y0), self.get(x0, y1), self.get(x1, y1));
+        let chan = |f: fn(&Color) -> u8| {
+            let top = f(&c00) as f32 + (f(&c10) as f32 - f(&c00) as f32) * tx;
+            let bot = f(&c01) as f32 + (f(&c11) as f32 - f(&c01) as f32) * tx;
+            top + (bot - top) * ty
+        };
+        Some(Color::rgba(
+            chan(|c| c.r) as u8,
+            chan(|c| c.g) as u8,
+            chan(|c| c.b) as u8,
+            chan(|c| c.a) as u8,
+        ))
+    }
+
     pub fn set(&mut self, x: u32, y: u32, color: Color) {
         let i = self.idx(x, y);
         self.data[i] = color.r;
