@@ -19,6 +19,19 @@ const CANDIDATES: &[&str] = &[
     "/usr/share/fonts/truetype/liberation/LiberationSans.ttf",
 ];
 
+/// Script faces for signature text ("ghetto PDF signature" mode).
+/// Dancing Script is OFL-licensed and arrives via the app's own
+/// auto-install (fonts-dancingscript) the first time a user sets up
+/// a script signature — never bundled, per the no-font-cargo rule.
+/// Comic Relief ships with Zorin and is the local fallback; after
+/// that, draw_script_text degrades to the regular face.
+const SCRIPT_CANDIDATES: &[&str] = &[
+    "/usr/share/fonts/truetype/dancingscript/DancingScript-Regular.ttf",
+    "/usr/share/fonts/truetype/dancingscript/DancingScript[wght].ttf",
+    "/usr/share/fonts/truetype/dancingscript/DancingScript-Bold.ttf",
+    "/usr/share/fonts/truetype/comic-relief-zorin-os/ComicRelief-Regular.ttf",
+];
+
 static FONT: OnceLock<Option<(FontRef<'static>, &'static str)>> = OnceLock::new();
 
 fn font() -> Option<&'static FontRef<'static>> {
@@ -35,6 +48,31 @@ fn font() -> Option<&'static FontRef<'static>> {
     })
     .as_ref()
     .map(|(f, _)| f)
+}
+
+static SCRIPT_FONT: OnceLock<Option<(FontRef<'static>, &'static str)>> = OnceLock::new();
+
+fn script_font() -> Option<&'static FontRef<'static>> {
+    SCRIPT_FONT
+        .get_or_init(|| {
+            for path in SCRIPT_CANDIDATES {
+                if let Ok(bytes) = std::fs::read(path) {
+                    let leaked: &'static [u8] = Box::leak(bytes.into_boxed_slice());
+                    if let Ok(f) = FontRef::try_from_slice(leaked) {
+                        return Some((f, path));
+                    }
+                }
+            }
+            None
+        })
+        .as_ref()
+        .map(|(f, _)| f)
+}
+
+/// Path of the script font in use (diagnostics); None = no script face.
+pub fn script_font_path() -> Option<&'static str> {
+    let _ = script_font();
+    SCRIPT_FONT.get().and_then(|o| o.as_ref().map(|(_, p)| *p))
 }
 
 /// Path of the font in use (diagnostics); None = bitmap fallback active.
@@ -55,6 +93,17 @@ fn scale_for(height: f32) -> PxScale {
 /// font is available (caller falls back to the bitmap font).
 pub fn draw_text(img: &mut RgbaImage, x: f32, y: f32, height: f32, text: &str, color: Color) -> Option<f32> {
     let font = font()?;
+    draw_with(font, img, x, y, height, text, color)
+}
+
+/// Signature-style variant: prefers a script face, degrades to the
+/// regular face, then to None (bitmap fallback — caps, but honest).
+pub fn draw_script_text(img: &mut RgbaImage, x: f32, y: f32, height: f32, text: &str, color: Color) -> Option<f32> {
+    let font = script_font().or_else(font)?;
+    draw_with(font, img, x, y, height, text, color)
+}
+
+fn draw_with(font: &FontRef, img: &mut RgbaImage, x: f32, y: f32, height: f32, text: &str, color: Color) -> Option<f32> {
     let scale = scale_for(height);
     let scaled = font.as_scaled(scale);
     let mut max_width = 0.0f32;

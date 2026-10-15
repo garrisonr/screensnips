@@ -128,7 +128,15 @@ pub enum PrimitiveKind {
     Highlight { points: Vec<Point> },
     /// Dim everything OUTSIDE the rect (Snagit spotlight).
     Spotlight { rect: RectN },
-    Text { at: Point, text: String },
+    Text {
+        at: Point,
+        text: String,
+        /// Signature-style text: rendered in a flowing script face
+        /// (the "ghetto PDF signature"). #[serde(default)] so every
+        /// sidecar written before signatures existed loads as false.
+        #[serde(default)]
+        script: bool,
+    },
     /// A text box (anchored at `at`, its top-left) with a leader tail
     /// pointing at `tail` — the thing being called out.
     Callout { at: Point, tail: Point, text: String },

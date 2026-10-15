@@ -73,11 +73,17 @@ struct Settings {
     /// because deleting a man's pictures unasked is a firing offense.
     #[serde(default)]
     retention_days: u32,
+    /// The user's visual signature, free-form JSON owned by the UI
+    /// ({mode:"ink", strokes:[[[x,y],…]]} or {mode:"script", name}).
+    /// Kept in this file, on this machine, nowhere else — it is a
+    /// picture of a signature, not a credential.
+    #[serde(default)]
+    signature: Option<serde_json::Value>,
 }
 
 impl Default for Settings {
     fn default() -> Self {
-        Settings { backend: "auto".into(), save_dir: String::new(), retention_days: 0 }
+        Settings { backend: "auto".into(), save_dir: String::new(), retention_days: 0, signature: None }
     }
 }
 
@@ -454,6 +460,46 @@ async fn ensure_ocr() -> Result<String, String> {
     } else {
         Err("Screensnips couldn't set up text recognition on this system. \
              Saving and everything else still works — only Grab Text is affected."
+            .into())
+    }
+}
+
+/// Script faces the signature feature can use, best first. Dancing
+/// Script (OFL) arrives via ensure_script_font; Comic Relief ships
+/// with Zorin. Mirrors shot-render's SCRIPT_CANDIDATES.
+const SCRIPT_FONT_FILES: &[&str] = &[
+    "/usr/share/fonts/truetype/dancingscript/DancingScript-Regular.ttf",
+    "/usr/share/fonts/truetype/dancingscript/DancingScript[wght].ttf",
+    "/usr/share/fonts/truetype/comic-relief-zorin-os/ComicRelief-Regular.ttf",
+];
+
+fn script_font_present() -> bool {
+    SCRIPT_FONT_FILES.iter().any(|p| std::path::Path::new(p).exists())
+}
+
+#[tauri::command]
+fn script_font_status() -> serde_json::Value {
+    serde_json::json!({ "script_font": script_font_present() })
+}
+
+/// One-click install of a real script font for signatures — same
+/// dependency law as the OCR engine: detect, install, the polkit
+/// prompt is the only thing the user ever sees.
+#[tauri::command]
+async fn ensure_script_font() -> Result<String, String> {
+    if script_font_present() {
+        return Ok("already installed".into());
+    }
+    let installed = tauri::async_runtime::spawn_blocking(|| {
+        install_packages(&["fonts-dancingscript"]).is_ok() && script_font_present()
+    })
+    .await
+    .map_err(|_| "the signature-font setup was interrupted".to_string())?;
+    if installed {
+        Ok("installed".into())
+    } else {
+        Err("Screensnips couldn't set up the script font on this system. \
+             Signatures still work in the built-in fallback style."
             .into())
     }
 }
@@ -1796,6 +1842,9 @@ fn save_settings(settings: serde_json::Value) -> Result<(), String> {
     if let Some(r) = settings.get("retention_days").and_then(|v| v.as_u64()) {
         cur.retention_days = r.min(3650) as u32;
     }
+    if let Some(sig) = settings.get("signature") {
+        cur.signature = if sig.is_null() { None } else { Some(sig.clone()) };
+    }
     save_settings_file(&cur)
 }
 
@@ -2374,7 +2423,7 @@ fn selftest_qa() -> Result<(), String> {
         },
     );
     doc.add(
-        PK::Text { at: Point::new(0.06, 0.84), text: "a text label".into() },
+        PK::Text { at: Point::new(0.06, 0.84), text: "a text label".into(), script: false },
         Style { stroke: ink, font_size: Some(0.035), ..Style::default() },
     );
     // (Callout sits clear of the blur/pixelate bands on purpose: an
@@ -2841,6 +2890,8 @@ fn main() {
             set_bend,
             ocr_status,
             ensure_ocr,
+            script_font_status,
+            ensure_script_font,
             grab_text,
             ocr_library_shot,
             export_library_zip,

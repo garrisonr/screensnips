@@ -85,6 +85,16 @@ pub fn draw_text(img: &mut RgbaImage, x: f32, y: f32, height: f32, text: &str, c
     draw_text_bitmap(img, x, y, height, text, color)
 }
 
+/// Signature-style text: a flowing script face when one is available
+/// (Dancing Script via the auto-install law, Comic Relief on Zorin),
+/// the regular face after that, bitmap caps as the last resort.
+pub fn draw_text_script(img: &mut RgbaImage, x: f32, y: f32, height: f32, text: &str, color: Color) -> f32 {
+    if let Some(w) = crate::font::draw_script_text(img, x, y, height, text, color) {
+        return w;
+    }
+    draw_text_bitmap(img, x, y, height, text, color)
+}
+
 fn draw_text_bitmap(img: &mut RgbaImage, x: f32, y: f32, height: f32, text: &str, color: Color) -> f32 {
     let scale = (height / 7.0).max(1.0);
     let block = scale.ceil() as i32;

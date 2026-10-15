@@ -239,16 +239,14 @@ fn draw_annotations(doc: &Document, img: &mut RgbaImage, unrendered: &mut Vec<u6
                 draw::rect(img, bx, by, bw, bh, height * 0.28, sw.max(1.5), s.stroke, Some(fill));
                 text::draw_text(img, bx + pad, by + pad * 0.65, height, content, Color::WHITE);
             }
-            PrimitiveKind::Text { at, text: content } => {
+            PrimitiveKind::Text { at, text: content, script } => {
                 let height = (s.font_size.unwrap_or(0.035) * iw).max(7.0);
-                text::draw_text(
-                    img,
-                    to_px(at.x, img.width),
-                    to_px(at.y, img.height),
-                    height,
-                    content,
-                    s.stroke,
-                );
+                let (x, y) = (to_px(at.x, img.width), to_px(at.y, img.height));
+                if *script {
+                    text::draw_text_script(img, x, y, height, content, s.stroke);
+                } else {
+                    text::draw_text(img, x, y, height, content, s.stroke);
+                }
             }
             PrimitiveKind::Stamp { at, stamp_id, scale, rotation_deg } => {
                 let size = scale * iw;
@@ -415,6 +413,34 @@ fn draw_stamp(img: &mut RgbaImage, x0: f32, y0: f32, size: f32, stamp_id: &str, 
                 }
                 prev = Some(pt);
             }
+        }
+        "received" | "reviewed" | "approved" => {
+            // The HR rubber stamps: a double-ruled band with the word
+            // set dead center via the real text path — letters, not
+            // glyphs pretending. RECEIVED / REVIEWED / APPROVED.
+            let word = stamp_id.to_uppercase();
+            let (bx, by) = p(0.03, 0.30);
+            let (bw, bh) = (size * 0.94, size * 0.40);
+            draw::rect(img, bx, by, bw, bh, size * 0.045, size * 0.030, color, None);
+            let inset = size * 0.030;
+            draw::rect(
+                img,
+                bx + inset,
+                by + inset,
+                bw - inset * 2.0,
+                bh - inset * 2.0,
+                size * 0.03,
+                size * 0.012,
+                color,
+                None,
+            );
+            let mut th = size * 0.21;
+            let tw = text::measure(&word, th);
+            if tw > bw * 0.86 {
+                th *= (bw * 0.86) / tw;
+            }
+            let tw = text::measure(&word, th);
+            text::draw_text(img, x0 + (size - tw) / 2.0, y0 + (size - th) / 2.0, th, &word, color);
         }
         "ring" => {
             let (cx, cy) = p(0.5, 0.5);

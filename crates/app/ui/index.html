@@ -108,7 +108,8 @@
   .dropdown-menu .menu-sep{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:.5rem .6rem .2rem;border-top:1px solid var(--border);margin-top:.3rem}
   .dropdown-menu{max-height:60vh;overflow-y:auto}
   #preview{width:100%;border:1px solid var(--border);border-radius:12px;background:#0d0f13}
-  #status{font-size:.8rem;color:var(--muted);padding:.3rem 0}
+  #status{font-size:1rem;line-height:1.5;color:var(--ink);padding:.45rem 0}
+  #status b{color:var(--accent)}
   .privacy{font-size:.75rem;color:var(--muted);border:1px dashed var(--border);border-radius:12px;padding:.5rem .6rem}
   .swatches{display:flex;gap:.45rem;margin:.4rem 0;flex-wrap:wrap;align-items:center}
   .swatches .swatch{flex:none}
@@ -259,7 +260,7 @@
       <canvas id="overlay" width="960" height="540"></canvas>
       <canvas id="loupe" width="176" height="176" hidden></canvas>
     </div>
-    <div id="status">Capture opens the system picker so you frame the shot first (area, window, or screen). ⚡ Instant grabs the whole screen immediately. 📂 Open brings in any image — a phone photo, a scan — or just drag one onto the window.</div>
+    <div id="status"><b>Capture</b> — frame the shot first with the system picker: area, window, or screen.<br><b>⚡ Instant</b> — grabs the whole screen immediately.<br><b>📂 Open</b> — brings in any image (a phone photo, a scan), or just drag one onto the window.</div>
   </section>
   <aside>
     <details class="panel" id="panel-markup" open>
@@ -2334,8 +2335,38 @@ async function refreshOcrStatus(){
   }catch(e){ ocrReady = false; }
   document.getElementById('btnInstallOcr').hidden = ocrReady;
 }
+let ocrEnsuring = null;
+/// The dependency law at the two OCR doors: when the engine is
+/// missing, install it right here (the system prompt is the only
+/// thing the user sees) and then let the caller's action continue —
+/// never block with directions to some other panel's button. A
+/// failure lands as the backend's calm explanation, with the next
+/// attempt one click of the same button away.
+async function ensureOcrReady(){
+  if(ocrReady) return true;
+  if(!ocrEnsuring){
+    ocrEnsuring = (async () => {
+      setStatus('Setting up text recognition — approve the system prompt…');
+      try{
+        await invoke('ensure_ocr');
+      }catch(e){
+        setStatus('' + e);
+        return false;
+      }
+      await refreshOcrStatus();
+      if(!ocrReady){
+        setStatus('The text-recognition install did not complete — try the same button again whenever you like.');
+        return false;
+      }
+      setStatus('Text recognition is set up. Fully offline, forever.');
+      return true;
+    })();
+  }
+  try{ return await ocrEnsuring; }
+  finally{ ocrEnsuring = null; }
+}
 async function ocrCard(card){
-  if(!ocrReady){ setStatus('OCR engine not installed yet — use “Install the OCR engine” in the Output panel first.'); return; }
+  if(!(await ensureOcrReady())) return;
   setStatus('Reading text in “' + libDisplayName(card) + '”…');
   try{
     const r = await invoke('ocr_library_shot', { shotPath: card.shot_path });
@@ -2345,16 +2376,11 @@ async function ocrCard(card){
   }catch(e){ setStatus('OCR failed: ' + e); }
 }
 document.getElementById('btnInstallOcr').addEventListener('click', async () => {
-  setStatus('Installing the OCR engine — approve the system prompt…');
-  try{
-    await invoke('ensure_ocr');
-    await refreshOcrStatus();
-    setStatus(ocrReady ? 'OCR engine installed. Fully offline, forever.' : 'Install did not complete.');
-  }catch(e){ setStatus('OCR install failed: ' + e); }
+  await ensureOcrReady();
 });
 document.getElementById('btnGrabText').addEventListener('click', async () => {
   if(!doc){ setStatus('Capture or open a shot first.'); return; }
-  if(!ocrReady){ setStatus('OCR engine not installed yet — one click below installs it (system prompt, then done forever).'); return; }
+  if(!(await ensureOcrReady())) return;
   setStatus('Reading the text in this shot…');
   try{
     const r = await invoke('grab_text');

@@ -359,7 +359,7 @@ mod tests {
         doc.beautify.padding = Padding::uniform(0.0);
         doc.beautify.shadow.enabled = false;
         doc.add(
-            PrimitiveKind::Text { at: Point::new(0.05, 0.1), text: "HI".into() },
+            PrimitiveKind::Text { at: Point::new(0.05, 0.1), text: "HI".into(), script: false },
             Style { font_size: Some(0.14), ..Style::default() },
         );
         doc.add(
@@ -393,6 +393,40 @@ mod tests {
             }
         }
         assert!(red > 20, "expected text glyph pixels, found {}", red);
+    }
+
+    #[test]
+    fn word_stamps_paint_on_a_wide_screenshot() {
+        // RECEIVED / REVIEWED / APPROVED — the HR rubber stamps.
+        // Non-square fixture on purpose (the §19 lesson: aspect-blind
+        // stamp geometry only shows its bugs off the square).
+        for id in ["received", "reviewed", "approved"] {
+            let mut doc = doc_for(1000, 400);
+            doc.beautify.padding = Padding::uniform(0.0);
+            doc.beautify.shadow.enabled = false;
+            doc.add(
+                PrimitiveKind::Stamp {
+                    at: Point::new(0.3, 0.3),
+                    stamp_id: id.into(),
+                    scale: 0.3,
+                    rotation_deg: 0.0,
+                },
+                Style::default(),
+            );
+            let src = solid_source(1000, 400, Color::WHITE);
+            let out = render(&doc, &src).unwrap();
+            assert!(out.unrendered.is_empty(), "{id} reported unrendered");
+            // Stamp tile: 300px at (300, 120). Count annotation-red.
+            let mut red = 0;
+            for y in 120..420.min(out.image.height) {
+                for x in 300..600 {
+                    if out.image.get(x, y) == Color::ANNOTATION_RED {
+                        red += 1;
+                    }
+                }
+            }
+            assert!(red > 400, "{id} should paint border + word, found {red} px");
+        }
     }
 
     #[test]
