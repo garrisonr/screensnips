@@ -15,6 +15,7 @@ use shot_model::{Beautify, Document, ImageRef, PrimitiveKind, RectN, Style};
 use shot_render::{render, RgbaImage};
 use std::io::Write;
 use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 use tauri::{Manager, State};
 
@@ -204,6 +205,16 @@ struct StartupAction {
 }
 
 static STARTUP: OnceLock<Mutex<Option<StartupAction>>> = OnceLock::new();
+
+/// Set by the frontend (Esc) to abort a capture that is sitting in its
+/// backend delay wait; `capture` clears it on entry and polls it while
+/// waiting. The delay lives in Rust on purpose: the countdown used to be
+/// a JS timer chain in the WebView, and a renderer's timers are
+/// throttled or suspended whenever its window is minimized or covered —
+/// exactly what a delayed menu grab sends the user off to do — so the
+/// grab silently never fired (Dickles, 2026-10-16). A deadline the
+/// backend keeps cannot be eaten by the compositor.
+static CAPTURE_CANCEL: AtomicBool = AtomicBool::new(false);
 
 fn parse_startup_args() {
     let mut action: Option<StartupAction> = None;
@@ -796,12 +807,23 @@ fn env_info() -> EnvInfo {
 }
 
 #[tauri::command]
+fn cancel_capture() {
+    CAPTURE_CANCEL.store(true, Ordering::SeqCst);
+}
+
+#[tauri::command]
 async fn capture(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
     interactive: Option<bool>,
+    delay_secs: Option<u64>,
 ) -> Result<serde_json::Value, String> {
     let interactive = interactive.unwrap_or(true);
+    // The delayed-grab wait (see CAPTURE_CANCEL above). The picker
+    // never waits: a delay always implies a full-screen menu grab, and
+    // Instant passes no delay at all.
+    let wait_secs = if interactive { 0 } else { delay_secs.unwrap_or(0) };
+    CAPTURE_CANCEL.store(false, Ordering::SeqCst);
     let forced = load_settings().backend;
     let arc = state.0.clone();
     // An instant grab must not photograph our own window: hide it, let
@@ -814,6 +836,16 @@ async fn capture(
         }
     }
     let result = tauri::async_runtime::spawn_blocking(move || {
+        if wait_secs > 0 {
+            let deadline =
+                std::time::Instant::now() + std::time::Duration::from_secs(wait_secs);
+            while std::time::Instant::now() < deadline {
+                if CAPTURE_CANCEL.load(Ordering::SeqCst) {
+                    return Err("capture cancelled".to_string());
+                }
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
+        }
         if !interactive {
             std::thread::sleep(std::time::Duration::from_millis(220));
         }
@@ -2856,6 +2888,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             env_info,
             capture,
+            cancel_capture,
             get_doc,
             add_primitive,
             move_primitive,
